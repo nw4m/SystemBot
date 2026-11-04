@@ -1,10 +1,9 @@
 const { buildEmbed } = require('../../utils/embedBuilder');
-const { hasPermission } = require('../../utils/permissionCheck');
 const ms = require('ms');
 
-const DEFAULT_DURATION     = 10 * 60 * 1000; // 10 minutes
+const DEFAULT_DURATION     = 10 * 60 * 1000;
 const DEFAULT_DURATION_STR = '10m';
-const MAX_DURATION         = 28 * 24 * 60 * 60 * 1000; // 28 days
+const MAX_DURATION         = 28 * 24 * 60 * 60 * 1000;
 
 module.exports = {
   name: 'timeout',
@@ -13,8 +12,6 @@ module.exports = {
   usage: '!timeout <@user | ID> [duration] [reason]',
 
   async execute(message, args, client) {
-    if (!await hasPermission(message, 'timeout', client)) return;
-
     const target = message.mentions.members.first()
       || (args[0] ? await message.guild.members.fetch(args[0]).catch(() => null) : null);
 
@@ -38,11 +35,9 @@ module.exports = {
       });
     }
 
-    // Argument index right after user mention/ID
     const argOffset = message.mentions.users.size ? 1 : 1;
     const rawDur    = args[argOffset];
 
-    // If next arg parses as a valid duration — use it, else fall back to 10m
     let duration    = DEFAULT_DURATION;
     let durationStr = DEFAULT_DURATION_STR;
     let reasonStart = argOffset;
@@ -54,11 +49,9 @@ module.exports = {
         durationStr = rawDur;
         reasonStart = argOffset + 1;
       }
-      // Invalid duration string — treat entire remaining args as reason
     }
 
     const reason = args.slice(reasonStart).join(' ') || 'No reason provided.';
-
     await target.timeout(duration, reason);
 
     return message.reply({

@@ -1,18 +1,13 @@
 const { EmbedBuilder } = require('discord.js');
+const fs   = require('fs');
+const path = require('path');
 
-/**
- * Builds a standard embed matching the BMO style.
- * @param {Object} options
- * @param {string} options.title
- * @param {string} [options.description]
- * @param {Array}  [options.fields]   - [{name, value, inline}]
- * @param {import('discord.js').Client} options.client
- * @param {import('discord.js').Guild}  options.guild
- * @param {string} [options.color]    - hex override
- */
 function buildEmbed({ title, description, fields = [], client, guild, color }) {
-  const config = require('../config.json');
-  const embedColor = color || config.embedColor || '#fd6868';
+  let embedColor = color || '#fd6868';
+  try {
+    const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/config.json'), 'utf8'));
+    embedColor = color || config.embedColor || '#fd6868';
+  } catch {}
 
   const embed = new EmbedBuilder()
     .setColor(embedColor)
@@ -21,7 +16,6 @@ function buildEmbed({ title, description, fields = [], client, guild, color }) {
 
   if (description) embed.setDescription(description);
 
-  // Author = bot name + bot avatar (small icon top-left)
   if (client?.user) {
     embed.setAuthor({
       name: client.user.username,
@@ -29,36 +23,23 @@ function buildEmbed({ title, description, fields = [], client, guild, color }) {
     });
   }
 
-  // Thumbnail = server icon (top-right)
   if (guild?.iconURL) {
     const iconURL = guild.iconURL({ dynamic: true });
     if (iconURL) embed.setThumbnail(iconURL);
   }
 
-  // Footer = "Server Moderation | date"
   embed.setFooter({
     text: `${guild?.name ?? 'Server'} Moderation`,
     iconURL: guild?.iconURL?.({ dynamic: true }) ?? undefined,
   });
 
-  if (fields.length > 0) {
-    embed.addFields(fields);
-  }
+  if (fields.length > 0) embed.addFields(fields);
 
   return embed;
 }
 
-/**
- * Sends an error embed (no-permission / wrong usage).
- */
 function errorEmbed({ description, client, guild }) {
-  return buildEmbed({
-    title: 'Error',
-    description,
-    client,
-    guild,
-    color: '#ff4444',
-  });
+  return buildEmbed({ title: 'Error', description, client, guild, color: '#ff4444' });
 }
 
 module.exports = { buildEmbed, errorEmbed };

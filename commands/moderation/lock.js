@@ -1,11 +1,5 @@
 const { buildEmbed } = require('../../utils/embedBuilder');
-const { hasPermission } = require('../../utils/permissionCheck');
-const {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ComponentType,
-} = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
 
 module.exports = {
   name: 'lock',
@@ -14,20 +8,11 @@ module.exports = {
   usage: '!lock [#channel]',
 
   async execute(message, args, client) {
-    if (!await hasPermission(message, 'lock', client)) return;
-
     const channel = message.mentions.channels.first() || message.channel;
 
-    // ── Confirmation buttons ──────────────────────────────────────────────────
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('lock_confirm')
-        .setLabel('Confirm')
-        .setStyle(ButtonStyle.Success),
-      new ButtonBuilder()
-        .setCustomId('lock_deny')
-        .setLabel('Cancel')
-        .setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId('lock_confirm').setLabel('Confirm').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('lock_deny').setLabel('Cancel').setStyle(ButtonStyle.Danger),
     );
 
     const confirmMsg = await message.reply({
@@ -35,7 +20,6 @@ module.exports = {
       components: [row],
     });
 
-    // ── Wait for button click (30 seconds, only from command author) ──────────
     let interaction;
     try {
       interaction = await confirmMsg.awaitMessageComponent({
@@ -44,60 +28,33 @@ module.exports = {
         time: 30_000,
       });
     } catch {
-      // Timed out — disable buttons and update message
       const disabledRow = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('lock_confirm')
-          .setLabel('Confirm')
-          .setStyle(ButtonStyle.Success)
-          .setDisabled(true),
-        new ButtonBuilder()
-          .setCustomId('lock_deny')
-          .setLabel('Cancel')
-          .setStyle(ButtonStyle.Danger)
-          .setDisabled(true),
+        new ButtonBuilder().setCustomId('lock_confirm').setLabel('Confirm').setStyle(ButtonStyle.Success).setDisabled(true),
+        new ButtonBuilder().setCustomId('lock_deny').setLabel('Cancel').setStyle(ButtonStyle.Danger).setDisabled(true),
       );
-      await confirmMsg.edit({
-        content: 'Lock request timed out.',
-        components: [disabledRow],
-      }).catch(() => {});
+      await confirmMsg.edit({ content: 'Lock request timed out.', components: [disabledRow] }).catch(() => {});
       return;
     }
 
-    // ── Denied ────────────────────────────────────────────────────────────────
     if (interaction.customId === 'lock_deny') {
-      await interaction.update({
-        content: 'OK',
-        components: [],
-      });
+      await interaction.update({ content: 'OK', components: [] });
       return;
     }
 
-    // ── Confirmed — execute lock ───────────────────────────────────────────────
     try {
-      await channel.permissionOverwrites.edit(message.guild.roles.everyone, {
-        SendMessages: false,
-      });
+      await channel.permissionOverwrites.edit(message.guild.roles.everyone, { SendMessages: false });
     } catch (err) {
       const description = err.code === 350005
         ? `Cannot lock <#${channel.id}>.\n\nThis server has **Onboarding** enabled and Discord requires at least one channel where @everyone can read and send messages.`
         : `Failed to lock <#${channel.id}>.\n\`${err.message}\``;
-
       await interaction.update({
         content: '',
-        embeds: [buildEmbed({
-          title: 'Lock Failed',
-          description,
-          client,
-          guild: message.guild,
-          color: '#ff4444',
-        })],
+        embeds: [buildEmbed({ title: 'Lock Failed', description, client, guild: message.guild, color: '#ff4444' })],
         components: [],
       });
       return;
     }
 
-    // Success — replace the plain-text confirmation with the result embed
     await interaction.update({
       content: '',
       embeds: [buildEmbed({
@@ -107,8 +64,7 @@ module.exports = {
           { name: 'Channel',   value: `<#${channel.id}>`,        inline: false },
           { name: 'Moderator', value: `<@${message.author.id}>`, inline: false },
         ],
-        client,
-        guild: message.guild,
+        client, guild: message.guild,
       })],
       components: [],
     });
