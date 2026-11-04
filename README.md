@@ -1,4 +1,4 @@
-# EL MOSHAKES Bot
+# Discord System Bot
 
 Discord moderation bot built with discord.js v14, with a web dashboard for managing settings and permissions.
 
