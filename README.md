@@ -1,6 +1,6 @@
-# Discord Moderation Bot
+# EL MOSHAKES Bot
 
-A full-featured Discord moderation bot built with **discord.js v14**, with embed responses styled in `#fd6868` and a web dashboard for managing settings and role permissions.
+Discord moderation bot built with discord.js v14, with a web dashboard for managing settings and permissions.
 
 ---
 
@@ -16,36 +16,26 @@ npm install
 
 Copy `.env.example` to `.env` and fill in your values:
 
-```bash
-copy .env.example .env
-```
+| Variable              | Description                                    |
+|-----------------------|------------------------------------------------|
+| `TOKEN`               | Discord bot token                              |
+| `CLIENT_ID`           | Bot Application ID                             |
+| `GUILD_ID`            | Your server ID                                 |
+| `PREFIX`              | Command prefix (default `!`)                   |
+| `DASHBOARD_PORT`      | Dashboard port (default `3000`)                |
+| `DASHBOARD_SECRET`    | Random secret string for session encryption    |
+| `DASHBOARD_USERNAME`  | Dashboard login username                       |
+| `DASHBOARD_PASSWORD`  | Dashboard login password                       |
 
-| Variable             | Description                                      |
-|----------------------|--------------------------------------------------|
-| `TOKEN`              | Your Discord bot token                           |
-| `CLIENT_ID`          | Your bot's Application/Client ID                 |
-| `GUILD_ID`           | Your server ID                                   |
-| `PREFIX`             | Command prefix (default `!`)                     |
-| `DASHBOARD_PORT`     | Port for the web dashboard (default `3000`)      |
-| `DASHBOARD_SECRET`   | Random secret string for session encryption      |
-| `DASHBOARD_USERNAME` | Dashboard login username                         |
-| `DASHBOARD_PASSWORD` | Dashboard login password                         |
-
-### 3. Start the bot
+### 3. Start
 
 ```bash
 node index.js
 ```
 
-### 4. Start the dashboard
+This starts both the bot and the dashboard at the same time.
 
-In a separate terminal:
-
-```bash
-node dashboard/server.js
-```
-
-Then open `http://localhost:3000` in your browser.
+Dashboard: `http://localhost:<DASHBOARD_PORT>`
 
 ---
 
@@ -53,113 +43,106 @@ Then open `http://localhost:3000` in your browser.
 
 ### Moderation
 
-| Command          | Aliases                              | Description                        |
-|------------------|--------------------------------------|------------------------------------|
-| `!ban`           | نكج, تف, سيف, اعدم, تقنيش, كريج      | Ban a member                       |
-| `!unban`         | افراج, اقراج, اعفاء                   | Unban a user by ID                 |
-| `!kick`          | بار, برد, اطرد                        | Kick a member                      |
-| `!mute`          | اكم, اخرس                             | Mute a member (28-day timeout)     |
-| `!unmute`        | اتكلم                                | Unmute a member                    |
-| `!timeout`       | تأديب, نام                            | Timeout with duration (1m, 1h, 1d) |
-| `!untimeout`     | اصحى, اتايب                           | Remove timeout                     |
-| `!warn`          | w                                    | Warn a member                      |
-| `!warnings`      | warns, listwarns                     | List member warnings               |
-| `!clearwarnings` | cw, clearwarns                       | Clear all warnings                 |
-| `!nickname`      | nick, n, setnick, اسم                 | Change/reset nickname              |
-| `!purge`         | clear, c, prune, نظف                  | Delete messages (1-100)            |
-| `!lock`          | lk, قفل                               | Lock a channel                     |
-| `!unlock`        | ulk, افتح                             | Unlock a channel                   |
-| `!slowmode`      | sm                                   | Set channel slowmode               |
+| Command | Aliases |
+|---------|---------|
+| `!ban` | نكح, تف, سيف, إعدام, اعدم, تقليع, تفنيش, تلطيش, كربج, ban |
+| `!unban` | إفراج, افراج, اعفاء, unban |
+| `!kick` | برا, بره, اطرد, kick |
+| `!mute` | اسكت, اخرس, اكتم, mute |
+| `!unmute` | اتكلم, unmute |
+| `!timeout` | تأديب, تاديب, نام, timeout |
+| `!untimeout` | اصحى, اتايب, untimeout |
+| `!warn` | w |
+| `!warnings` | warns, listwarns |
+| `!clearwarnings` | cw, clearwarns |
+| `!nickname` | nick, n, setnick, #nick, اسم, nickname |
+| `!purge` | clear, c, prune, نظف, تنظيف |
+| `!lock` | lk, قفل, lock |
+| `!unlock` | ulk, فك, افتحه, unlock |
+| `!slowmode` | sm |
+| `!channelinfo` | ci, channelinfo |
+| `!roleadd` | ra, خد, حط, give |
+| `!roleremove` | rr, شيل, هات, remove |
+| `!role` | r |
 
 ### Utility
 
-| Command        | Aliases              | Description              |
-|----------------|----------------------|--------------------------|
-| `!ping`        | pong                 | Bot latency              |
-| `!help`        | h, commands          | Show all commands        |
-| `!userinfo`    | ui, whois            | User information         |
-| `!serverinfo`  | si, guildinfo        | Server information       |
-| `!avatar`      | av, pfp              | Show user avatar         |
-| `!botinfo`     | bi, info             | Bot information          |
-| `!afk`         | away                 | Set AFK status           |
-| `!channelinfo` | ci                   | Channel information      |
-| `!roleadd`     | ra, خد, give         | Add role to member       |
-| `!roleremove`  | rr, هات, شيل, remove  | Remove role from member  |
-| `!role`        | r                    | Role information         |
+| Command | Aliases |
+|---------|---------|
+| `!ping` | pong |
+| `!help` | h, commands |
+| `!userinfo` | ui, whois |
+| `!serverinfo` | si, guildinfo |
+| `!avatar` | av, pfp |
+| `!botinfo` | bi, info |
+| `!afk` | away |
+| `!خط` | khat, line |
 
 ---
 
-## Role Permissions
+## Permissions System
 
-Each command can be restricted to specific roles via the **dashboard**.
+- **Roles configured in dashboard** — only members with that role can use the command.
+- **No roles configured (empty)** — falls back to Discord's native permissions (e.g. `!ban` requires `Ban Members`).
+- **Administrators** always bypass all permission checks.
+- **Denied users** — bot stays completely silent, no response.
 
-- Go to `http://localhost:3000` and log in
-- Navigate to **Settings**
-- For each command, enter the **Role IDs** (one per line or comma-separated) that are allowed to use it
-- Leave blank = everyone can use the command
-- Server **Administrators** always bypass permission checks
-- If a user without the required role tries to use a restricted command, **the bot will not respond at all**
+### Discord Permission Defaults
 
-### How to get a Role ID
-
-In Discord: `Server Settings > Roles > Right-click role > Copy ID`
-(You need Developer Mode enabled: `User Settings > Advanced > Developer Mode`)
+| Command | Required Discord Permission |
+|---------|----------------------------|
+| ban, unban | Ban Members |
+| kick | Kick Members |
+| mute, unmute, timeout, untimeout, warn, warnings, clearwarnings | Moderate Members |
+| nickname | Manage Nicknames |
+| purge | Manage Messages |
+| lock, unlock, slowmode | Manage Channels |
+| roleadd, roleremove | Manage Roles |
+| ping, help, userinfo, serverinfo, avatar, botinfo, afk, خط | Everyone |
 
 ---
 
-## Dashboard
+## Dashboard Pages
 
-| Page       | URL                         | Description                          |
-|------------|-----------------------------|--------------------------------------|
-| Login      | `/login`                    | Sign in with username + password     |
-| Overview   | `/dashboard`                | Stats: commands, warnings, prefix    |
-| Settings   | `/settings`                 | Change prefix, color, role perms     |
-| Warnings   | `/warnings`                 | View and clear member warnings       |
+| Page | URL | Description |
+|------|-----|-------------|
+| Overview | `/dashboard` | Bot status, server info, container stats |
+| Moderators | `/members` | Members with mod permissions and their allowed commands |
+| Command Logs | `/logs` | Log of every command used — who, when, where, result |
+| Settings | `/settings` | Prefix, embed color, per-command role permissions, `!خط` message |
+| Warnings | `/warnings` | View and clear member warnings |
 
 ---
 
 ## Project Structure
 
 ```
-EL MOSHAKES/
-├── index.js                    # Bot entry point
-├── config.json                 # Bot config + warnings data
-├── .env                        # Environment variables (DO NOT SHARE)
-├── .env.example                # Template for .env
-├── package.json
+├── index.js                    # Bot entry point + dashboard launcher
+├── config.json                 # Default config (copied to data/ on first run)
+├── .env                        # Environment variables
 ├── commands/
-│   ├── moderation/             # Ban, kick, mute, warn, lock...
-│   └── utility/                # Ping, help, userinfo, afk...
+│   ├── moderation/             # ban, kick, mute, timeout, warn, lock...
+│   └── utility/                # ping, help, userinfo, afk, خط...
 ├── utils/
-│   ├── embedBuilder.js         # Embed builder (#fd6868 color)
-│   └── permissionCheck.js      # Role-based permission checker
+│   ├── embedBuilder.js         # Embed builder (color #fd6868)
+│   ├── permissionCheck.js      # Role-based permission checker
+│   └── logger.js               # Command execution logger
+├── data/
+│   ├── config.json             # Live config (writable)
+│   └── logs.json               # Command logs
 └── dashboard/
     ├── server.js               # Express dashboard server
-    ├── public/
-    │   └── style.css           # Dark theme dashboard CSS
-    └── views/
-        ├── login.ejs
-        ├── dashboard.ejs
-        ├── settings.ejs
-        ├── warnings.ejs
-        └── partials/
-            └── sidebar.ejs
+    ├── public/style.css        # Dashboard CSS
+    └── views/                  # EJS templates
 ```
 
 ---
 
 ## Required Bot Permissions
 
-When inviting the bot, make sure it has:
-
-- Administrator (recommended), OR manually:
-- Ban Members
-- Kick Members
-- Moderate Members (for timeout)
-- Manage Nicknames
-- Manage Messages (for purge)
-- Manage Channels (for lock/unlock/slowmode)
-- Manage Roles (for roleadd/roleremove)
+- Administrator (recommended), or:
+- Ban Members, Kick Members, Moderate Members
+- Manage Messages, Manage Channels, Manage Roles, Manage Nicknames
 - Send Messages, Embed Links, Read Message History
 
-**Important:** The bot's role must be **higher** than the roles it manages in the role hierarchy.
+The bot's role must be **higher** than any role it manages in the hierarchy.
