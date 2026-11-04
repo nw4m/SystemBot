@@ -1,0 +1,38 @@
+{
+  "prefix": "!",
+  "embedColor": "#fd6868",
+  "permissions": {
+    "ban": [],
+    "unban": [],
+    "kick": [],
+    "mute": [],
+    "unmute": [],
+    "timeout": [],
+    "untimeout": [],
+    "warn": [],
+    "warnings": [],
+    "clearwarnings": [],
+    "nickname": [],
+    "purge": [],
+    "lock": [],
+    "unlock": [],
+    "slowmode": [],
+    "channelinfo": [],
+    "roleadd": [],
+    "roleremove": [],
+    "role": [],
+    "ping": [],
+    "help": [],
+    "userinfo": [],
+    "serverinfo": [],
+    "avatar": [],
+    "botinfo": [],
+    "afk": [],
+    "خط": []
+  },
+  "khat": {
+    "text": "Set your message from the dashboard.",
+    "deleteCmd": false
+  },
+  "warnings": {}
+}

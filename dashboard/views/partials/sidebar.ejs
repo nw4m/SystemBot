@@ -1,0 +1,17 @@
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">B</div>
+    <span class="sidebar-title">Bot Dashboard</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="/dashboard" class="nav-item <%= page === 'dashboard' ? 'active' : '' %>">Overview</a>
+    <a href="/members"   class="nav-item <%= page === 'members'   ? 'active' : '' %>">Moderators</a>
+    <a href="/logs"      class="nav-item <%= page === 'logs'      ? 'active' : '' %>">Command Logs</a>
+    <a href="/settings"  class="nav-item <%= page === 'settings'  ? 'active' : '' %>">Settings</a>
+    <a href="/warnings"  class="nav-item <%= page === 'warnings'  ? 'active' : '' %>">Warnings</a>
+  </nav>
+  <div class="sidebar-footer">
+    <span class="sidebar-user"><%= username %></span>
+    <a href="/logout" class="btn btn-logout">Logout</a>
+  </div>
+</aside>
