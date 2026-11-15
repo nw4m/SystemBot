@@ -22,6 +22,12 @@ module.exports = {
       });
     }
 
+    if (target.roles.highest.position >= message.member.roles.highest.position) {
+      return message.reply({
+        embeds: [buildEmbed({ title: 'Ban Failed', description: `You cannot ban **${target.user.username}** — they have an equal or higher role than you.`, client, guild: message.guild })],
+      });
+    }
+
     const reason = args.slice(1).join(' ') || 'No reason provided.';
     await target.ban({ reason });
 

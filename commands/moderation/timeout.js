@@ -35,7 +35,17 @@ module.exports = {
       });
     }
 
-    const argOffset = message.mentions.users.size ? 1 : 1;
+    if (target.roles.highest.position >= message.member.roles.highest.position) {
+      return message.reply({
+        embeds: [buildEmbed({
+          title: 'Timeout Failed',
+          description: `You cannot timeout **${target.user.username}** — they have an equal or higher role than you.`,
+          client, guild: message.guild,
+        })],
+      });
+    }
+
+    const argOffset = message.mentions.users.size ? 1 : 0;
     const rawDur    = args[argOffset];
 
     let duration    = DEFAULT_DURATION;

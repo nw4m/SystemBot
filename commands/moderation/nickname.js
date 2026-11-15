@@ -16,11 +16,17 @@ module.exports = {
       });
     }
 
-    const newNick = args.slice(message.mentions.users.size ? 1 : 1).join(' ') || null;
+    const newNick = args.slice(message.mentions.users.size ? 1 : 0).join(' ') || null;
 
     if (!target.manageable) {
       return message.reply({
         embeds: [buildEmbed({ title: 'Nickname Failed', description: `I cannot change the nickname of **${target.user.username}**.`, client, guild: message.guild })],
+      });
+    }
+
+    if (target.roles.highest.position >= message.member.roles.highest.position) {
+      return message.reply({
+        embeds: [buildEmbed({ title: 'Nickname Failed', description: `You cannot change the nickname of **${target.user.username}** — they have an equal or higher role than you.`, client, guild: message.guild })],
       });
     }
 
