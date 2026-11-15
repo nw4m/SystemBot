@@ -24,7 +24,7 @@ module.exports = {
 
     if (target.roles.highest.position >= message.member.roles.highest.position) {
       return message.reply({
-        embeds: [buildEmbed({ title: 'Ban Failed', description: `You cannot ban **${target.user.username}** — they have an equal or higher role than you.`, client, guild: message.guild })],
+        embeds: [buildEmbed({ title: 'Ban Failed', description: `You cannot ban **${target.user.username}**, they have an equal or higher role than you.`, client, guild: message.guild })],
       });
     }
 

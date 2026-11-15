@@ -30,7 +30,7 @@ module.exports = {
     }
 
     const warnList = userWarnings
-      .map((w, i) => `**${i + 1}.** ${w.reason} — by <@${w.moderator}>`)
+      .map((w, i) => `**${i + 1}.** ${w.reason}, by <@${w.moderator}>`)
       .join('\n');
 
     return message.reply({

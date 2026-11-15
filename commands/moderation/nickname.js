@@ -26,7 +26,7 @@ module.exports = {
 
     if (target.roles.highest.position >= message.member.roles.highest.position) {
       return message.reply({
-        embeds: [buildEmbed({ title: 'Nickname Failed', description: `You cannot change the nickname of **${target.user.username}** — they have an equal or higher role than you.`, client, guild: message.guild })],
+        embeds: [buildEmbed({ title: 'Nickname Failed', description: `You cannot change the nickname of **${target.user.username}**, they have an equal or higher role than you.`, client, guild: message.guild })],
       });
     }
 

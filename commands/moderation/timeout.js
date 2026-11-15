@@ -39,7 +39,7 @@ module.exports = {
       return message.reply({
         embeds: [buildEmbed({
           title: 'Timeout Failed',
-          description: `You cannot timeout **${target.user.username}** — they have an equal or higher role than you.`,
+          description: `You cannot timeout **${target.user.username}**, they have an equal or higher role than you.`,
           client, guild: message.guild,
         })],
       });
