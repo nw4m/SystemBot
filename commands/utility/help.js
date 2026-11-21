@@ -1,6 +1,5 @@
 const { buildEmbed } = require('../../utils/embedBuilder');
-const fs   = require('fs');
-const path = require('path');
+const configStore = require('../../utils/configStore');
 
 module.exports = {
   name: 'help',
@@ -9,8 +8,8 @@ module.exports = {
   usage: '!help [command]',
 
   async execute(message, args, client) {
-    const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../../data/config.json'), 'utf8'));
-    const prefix = process.env.PREFIX || config.prefix || '!';
+    const config = configStore.read();
+    const prefix = config.prefix || '!';
 
     if (args[0]) {
       const cmd = client.commands.get(args[0].toLowerCase());

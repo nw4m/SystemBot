@@ -1,5 +1,4 @@
-const fs   = require('fs');
-const path = require('path');
+const configStore = require('./configStore');
 
 const DISCORD_PERM_DEFAULTS = {
   ban:           'BanMembers',
@@ -22,7 +21,7 @@ const DISCORD_PERM_DEFAULTS = {
 };
 
 async function hasPermission(message, commandName, client) {
-  const config       = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/config.json'), 'utf8'));
+  const config       = configStore.read();
   const allowedRoles = config.permissions?.[commandName] ?? [];
   const member       = message.member;
 

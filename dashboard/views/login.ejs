@@ -222,6 +222,7 @@
       <% } %>
 
       <form method="POST" action="/login" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
         <div class="input-row">
           <span class="input-icon">&#9786;</span>

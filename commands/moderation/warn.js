@@ -18,8 +18,9 @@ module.exports = {
   usage: '!warn <@user | ID> [reason]',
 
   async execute(message, args, client) {
-    const target = message.mentions.members.first()
-      || (args[0] ? await message.guild.members.fetch(args[0]).catch(() => null) : null);
+    const rawTarget = args[0]?.replace(/[<@!>]/g, '') || '';
+    const target = (rawTarget ? await message.guild.members.fetch(rawTarget).catch(() => null) : null)
+      || message.mentions.members.first();
 
     if (!target) {
       return message.reply({
@@ -28,6 +29,7 @@ module.exports = {
     }
 
     const reason = (args.slice(1).join(' ') || 'No reason provided.').slice(0, 512);
+    const config = getConfig();
 
     if (!config.warnings[message.guild.id])          config.warnings[message.guild.id] = {};
     if (!config.warnings[message.guild.id][target.id]) config.warnings[message.guild.id][target.id] = [];

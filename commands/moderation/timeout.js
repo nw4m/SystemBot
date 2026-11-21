@@ -12,8 +12,9 @@ module.exports = {
   usage: '!timeout <@user | ID> [duration] [reason]',
 
   async execute(message, args, client) {
-    const target = message.mentions.members.first()
-      || (args[0] ? await message.guild.members.fetch(args[0]).catch(() => null) : null);
+    const rawTarget = args[0]?.replace(/[<@!>]/g, '') || '';
+    const target = (rawTarget ? await message.guild.members.fetch(rawTarget).catch(() => null) : null)
+      || message.mentions.members.first();
 
     if (!target) {
       return message.reply({

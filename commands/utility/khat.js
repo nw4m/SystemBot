@@ -1,7 +1,4 @@
-const fs   = require('fs');
-const path = require('path');
-
-const configPath = path.join(__dirname, '../../data/config.json');
+const configStore = require('../../utils/configStore');
 
 module.exports = {
   name: 'خط',
@@ -10,7 +7,7 @@ module.exports = {
   usage: '!خط',
 
   async execute(message, args, client) {
-    const config    = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const config    = configStore.read();
     const khat      = config.khat || {};
     const text      = khat.text      || 'No message configured. Set it from the dashboard.';
     const deleteCmd = khat.deleteCmd ?? false;

@@ -15,6 +15,7 @@ const { setClient }     = require('./dashboard/server.js');
 const { logCommand }    = require('./utils/logger');
 const { hasPermission } = require('./utils/permissionCheck');
 const { registerEvents, takeSnapshot } = require('./utils/protection');
+const configStore       = require('./utils/configStore');
 
 const client = new Client({
   intents: [
@@ -81,6 +82,10 @@ async function ensureBotEmoji() {
 
 client.commands = new Collection();
 client.afkUsers = new Map();
+client.cooldowns = new Map();
+
+const COOLDOWN_COMMANDS = new Set(['ping','help','avatar','afk','خط','userinfo','serverinfo','botinfo','channelinfo','role']);
+const COOLDOWN_MS = 2000;
 
 const commandFolders = ['moderation', 'utility'];
 for (const folder of commandFolders) {
@@ -134,7 +139,7 @@ client.once('ready', async () => {
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.guild) return;
 
-  const cfg    = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/config.json'), 'utf8'));
+  const cfg    = configStore.read();
   const prefix = cfg.prefix || '!';
 
   if (message.mentions.users.size > 0) {
@@ -166,7 +171,7 @@ client.on('messageCreate', async (message) => {
     && message.content.trim().replace(`<@!${client.user.id}>`, '').replace(`<@${client.user.id}>`, '').trim() === '';
 
   if (onlyMention) {
-    const mentionCfg = getDataConfig();
+    const mentionCfg = configStore.read();
     const emojiStr   = mentionCfg.emojiId ? `<a:${EMOJI_NAME}:${mentionCfg.emojiId}>` : '';
 
     const container = new ContainerBuilder()
@@ -192,9 +197,13 @@ client.on('messageCreate', async (message) => {
   if (!command) return;
 
   const permitted = await hasPermission(message, command.name, client);
+  if (!permitted) return;
 
-  if (!permitted) {
-    return;
+  if (COOLDOWN_COMMANDS.has(command.name)) {
+    const key  = `${message.author.id}:${command.name}`;
+    const last = client.cooldowns.get(key) || 0;
+    if (Date.now() - last < COOLDOWN_MS) return;
+    client.cooldowns.set(key, Date.now());
   }
 
   let botReply = null;

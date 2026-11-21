@@ -14,8 +14,21 @@ const bcrypt  = require('bcryptjs');
 
 const app        = express();
 const PORT       = process.env.DASHBOARD_PORT || 3000;
+const HOST       = process.env.DASHBOARD_HOST || '127.0.0.1';
 const configPath = path.join(__dirname, '../data/config.json');
 const configSrc  = path.join(__dirname, '../config.json');
+
+const INSECURE_SECRET = 'supersecretkey';
+const INSECURE_PASS   = 'admin123';
+
+if (!process.env.DASHBOARD_SECRET || process.env.DASHBOARD_SECRET === INSECURE_SECRET) {
+  console.error('[DASHBOARD] FATAL: DASHBOARD_SECRET is missing or uses the insecure default. Set a strong secret in .env and restart.');
+  process.exit(1);
+}
+if (!process.env.DASHBOARD_PASSWORD || process.env.DASHBOARD_PASSWORD === INSECURE_PASS) {
+  console.error('[DASHBOARD] FATAL: DASHBOARD_PASSWORD is missing or uses the insecure default. Set a strong password in .env and restart.');
+  process.exit(1);
+}
 
 const loginAttempts = new Map();
 
@@ -70,10 +83,7 @@ app.use((req, res, next) => {
 });
 
 app.use(session({
-  secret: process.env.DASHBOARD_SECRET || (() => {
-    console.warn('[DASHBOARD] DASHBOARD_SECRET not set in .env — using insecure default. Set it before deploying.');
-    return 'supersecretkey';
-  })(),
+  secret: process.env.DASHBOARD_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 1000 * 60 * 60 * 24, sameSite: 'lax', secure: false },
@@ -94,7 +104,8 @@ function generateCsrf(req) {
 
 function csrfProtect(req, res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
-  const token = req.body._csrf || req.headers['x-csrf-token'];
+  const body  = req.body || {};
+  const token = body._csrf || req.headers['x-csrf-token'];
   if (!token || token !== req.session.csrfToken) return res.status(403).send('Invalid CSRF token.');
   next();
 }
@@ -169,11 +180,14 @@ app.get('/', (req, res) => {
 
 app.get('/login', (req, res) => {
   if (req.session.loggedIn) return res.redirect('/dashboard');
+  generateCsrf(req);
   res.render('login');
 });
 
-app.post('/login', loginRateLimit, (req, res) => {
-  const { username, password } = req.body;
+app.post('/login', loginRateLimit, csrfProtect, (req, res) => {
+  const body     = req.body || {};
+  const username = body.username || '';
+  const password = body.password || '';
   const envUser = process.env.DASHBOARD_USERNAME || 'admin';
   const envPass = process.env.DASHBOARD_PASSWORD || 'admin123';
   const usernameMatch = username === envUser;
@@ -198,7 +212,7 @@ app.post('/login', loginRateLimit, (req, res) => {
   res.redirect('/login');
 });
 
-app.post('/logout', requireAuth, (req, res) => {
+app.post('/logout', requireAuth, csrfProtect, (req, res) => {
   req.session.destroy(() => res.redirect('/login'));
 });
 
@@ -469,8 +483,8 @@ app.use((err, req, res, next) => {
   res.status(500).send('Internal server error.');
 });
 
-app.listen(PORT, () => {
-  console.log(`[DASHBOARD] Running at http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`[DASHBOARD] Running at http://${HOST}:${PORT}`);
 });
 
 module.exports = { app, setClient };

@@ -1,12 +1,12 @@
 const fs   = require('fs');
 const path = require('path');
 const ms   = require('ms');
+const configStore  = require('./configStore');
 
-const configPath   = path.join(__dirname, '../data/config.json');
 const snapshotPath = path.join(__dirname, '../data/snapshot.json');
 
 function getConfig() {
-  return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  return configStore.read();
 }
 
 function getSnapshot() {
@@ -26,6 +26,10 @@ async function takeSnapshot(guild) {
   try {
     const cfg = getConfig();
     if (!cfg.protection?.antiNuke?.enabled) return;
+
+    for (const [key] of trackers) {
+      if (trackers.get(key)?.length > 0) return;
+    }
     const roles    = [];
     const channels = [];
 
