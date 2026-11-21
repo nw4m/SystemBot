@@ -35,5 +35,95 @@
     "deleteCmd": false
   },
   "warnings": {},
-  "emojiId": "1573658800341389515"
+  "emojiId": "1573658800341389515",
+  "protection": {
+    "logChannel": "",
+    "whitelist": {
+      "users": [],
+      "roles": [],
+      "bots": []
+    },
+    "antiRaid": {
+      "enabled": false,
+      "joinRate": {
+        "enabled": true,
+        "count": 5,
+        "seconds": 10,
+        "action": "kick",
+        "timeoutDuration": "1h"
+      },
+      "accountAge": {
+        "enabled": true,
+        "days": 7,
+        "action": "kick",
+        "timeoutDuration": "1h"
+      }
+    },
+    "antiNuke": {
+      "enabled": false,
+      "channelDelete": {
+        "enabled": true,
+        "count": 3,
+        "seconds": 10,
+        "action": "kick",
+        "timeoutDuration": "1h"
+      },
+      "channelCreate": {
+        "enabled": true,
+        "count": 3,
+        "seconds": 10,
+        "action": "kick",
+        "timeoutDuration": "1h"
+      },
+      "channelEdit": {
+        "enabled": true,
+        "count": 5,
+        "seconds": 10,
+        "action": "kick",
+        "timeoutDuration": "1h"
+      },
+      "roleDelete": {
+        "enabled": true,
+        "count": 3,
+        "seconds": 10,
+        "action": "kick",
+        "timeoutDuration": "1h"
+      },
+      "roleCreate": {
+        "enabled": true,
+        "count": 3,
+        "seconds": 10,
+        "action": "kick",
+        "timeoutDuration": "1h"
+      },
+      "roleEdit": {
+        "enabled": true,
+        "count": 5,
+        "seconds": 10,
+        "action": "kick",
+        "timeoutDuration": "1h"
+      },
+      "massBan": {
+        "enabled": true,
+        "count": 3,
+        "seconds": 10,
+        "action": "kick",
+        "timeoutDuration": "1h"
+      },
+      "massKick": {
+        "enabled": true,
+        "count": 3,
+        "seconds": 10,
+        "action": "kick",
+        "timeoutDuration": "1h"
+      },
+      "webhookCreate": {
+        "enabled": true,
+        "count": 2,
+        "seconds": 10,
+        "action": "kick",
+        "timeoutDuration": "1h"
+      }
+    }
+  }
 }

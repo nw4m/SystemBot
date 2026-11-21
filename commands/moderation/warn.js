@@ -4,8 +4,12 @@ const path = require('path');
 
 const configPath = path.join(__dirname, '../../data/config.json');
 
-function getConfig()       { return JSON.parse(fs.readFileSync(configPath, 'utf8')); }
-function saveConfig(cfg)   { fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf8'); }
+function getConfig()     { return JSON.parse(fs.readFileSync(configPath, 'utf8')); }
+function saveConfig(cfg) {
+  const tmp = configPath + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(cfg, null, 2), 'utf8');
+  fs.renameSync(tmp, configPath);
+}
 
 module.exports = {
   name: 'warn',

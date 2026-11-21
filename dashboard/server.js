@@ -14,6 +14,24 @@ const PORT       = process.env.DASHBOARD_PORT || 3000;
 const configPath = path.join(__dirname, '../data/config.json');
 const configSrc  = path.join(__dirname, '../config.json');
 
+const loginAttempts = new Map();
+
+function loginRateLimit(req, res, next) {
+  const ip  = req.ip || req.connection.remoteAddress;
+  const now = Date.now();
+  const entry = loginAttempts.get(ip) || { count: 0, first: now };
+  if (now - entry.first > 15 * 60 * 1000) {
+    loginAttempts.set(ip, { count: 1, first: now });
+    return next();
+  }
+  if (entry.count >= 10) {
+    return res.status(429).send('Too many login attempts. Try again in 15 minutes.');
+  }
+  entry.count++;
+  loginAttempts.set(ip, entry);
+  next();
+}
+
 const dataDir = path.join(__dirname, '../data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
@@ -34,7 +52,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use(session({
-  secret: process.env.DASHBOARD_SECRET || 'supersecretkey',
+  secret: process.env.DASHBOARD_SECRET || (() => {
+    console.warn('[DASHBOARD] DASHBOARD_SECRET not set in .env — using insecure default. Set it before deploying.');
+    return 'supersecretkey';
+  })(),
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 1000 * 60 * 60 * 24 },
@@ -103,7 +124,7 @@ app.get('/login', (req, res) => {
   res.render('login');
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', loginRateLimit, (req, res) => {
   const { username, password } = req.body;
   const envUser = process.env.DASHBOARD_USERNAME || 'admin';
   const envPass = process.env.DASHBOARD_PASSWORD || 'admin123';
@@ -271,6 +292,67 @@ app.get('/members', requireAuth, async (req, res) => {
 
 app.get('/api/container', requireAuth, (req, res) => {
   res.json(getContainerStats());
+});
+
+app.get('/protection', requireAuth, (req, res) => {
+  const config = getConfig();
+  if (!config.protection) {
+    const base = JSON.parse(fs.readFileSync(configSrc, 'utf8'));
+    config.protection = base.protection;
+    saveConfig(config);
+  }
+  res.render('protection', {
+    username: req.session.username,
+    config,
+  });
+});
+
+app.post('/protection', requireAuth, (req, res) => {
+  const config = getConfig();
+  if (!config.protection) config.protection = {};
+  const p  = config.protection;
+  const b  = req.body;
+
+  p.logChannel = (b.logChannel || '').trim();
+
+  if (!p.whitelist) p.whitelist = {};
+  p.whitelist.users = (b.wl_users || '').split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+  p.whitelist.roles = (b.wl_roles || '').split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+  p.whitelist.bots  = (b.wl_bots  || '').split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+
+  if (!p.antiRaid) p.antiRaid = {};
+  p.antiRaid.enabled = b.antiRaid_enabled === 'on';
+  p.antiRaid.joinRate = {
+    enabled:         b.joinRate_enabled === 'on',
+    count:           parseInt(b.joinRate_count)   || 5,
+    seconds:         parseInt(b.joinRate_seconds) || 10,
+    action:          b.joinRate_action || 'kick',
+    timeoutDuration: (b.joinRate_timeoutDuration || '1h').trim(),
+  };
+  p.antiRaid.accountAge = {
+    enabled:         b.accountAge_enabled === 'on',
+    days:            parseInt(b.accountAge_days) || 7,
+    action:          b.accountAge_action || 'kick',
+    timeoutDuration: (b.accountAge_timeoutDuration || '1h').trim(),
+  };
+
+  if (!p.antiNuke) p.antiNuke = {};
+  p.antiNuke.enabled = b.antiNuke_enabled === 'on';
+
+  const nukeKeys = ['channelDelete','channelCreate','channelEdit','roleDelete','roleCreate','roleEdit','massBan','massKick','webhookCreate'];
+  for (const key of nukeKeys) {
+    p.antiNuke[key] = {
+      enabled:         b[`${key}_enabled`] === 'on',
+      count:           parseInt(b[`${key}_count`])   || 3,
+      seconds:         parseInt(b[`${key}_seconds`]) || 10,
+      action:          b[`${key}_action`] || 'ban',
+      timeoutDuration: (b[`${key}_timeoutDuration`] || '1h').trim(),
+    };
+  }
+
+  saveConfig(config);
+  req.flash('success', 'Protection settings saved.');
+  res.redirect('/protection');
 });
 
 app.get('/logs', requireAuth, (req, res) => {

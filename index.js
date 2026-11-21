@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, Partials, ActivityType, ComponentType, ContainerBuilder, TextDisplayBuilder, SectionBuilder, ThumbnailBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, Partials, ActivityType, ContainerBuilder, TextDisplayBuilder, MessageFlags } = require('discord.js');
 const fs   = require('fs');
 const path = require('path');
 const https = require('https');
@@ -7,6 +7,7 @@ const https = require('https');
 const { setClient }     = require('./dashboard/server.js');
 const { logCommand }    = require('./utils/logger');
 const { hasPermission } = require('./utils/permissionCheck');
+const { registerEvents, takeSnapshot } = require('./utils/protection');
 
 const client = new Client({
   intents: [
@@ -95,6 +96,13 @@ for (const folder of commandFolders) {
 client.once('ready', async () => {
   console.log(`[BOT] Logged in as ${client.user.tag}`);
   setClient(client);
+  registerEvents(client);
+
+  const guild = client.guilds.cache.first();
+  if (guild) {
+    await takeSnapshot(guild);
+    setInterval(() => takeSnapshot(guild), 5 * 60 * 1000);
+  }
 
   // Upload emoji once and cache the ID in data/config.json
   await ensureBotEmoji();
@@ -119,8 +127,8 @@ client.once('ready', async () => {
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.guild) return;
 
-  const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/config.json'), 'utf8'));
-  const prefix = process.env.PREFIX || config.prefix || '!';
+  const cfg    = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/config.json'), 'utf8'));
+  const prefix = process.env.PREFIX || cfg.prefix || '!';
 
   if (message.mentions.users.size > 0) {
     for (const [id, afkData] of client.afkUsers) {
@@ -151,8 +159,8 @@ client.on('messageCreate', async (message) => {
     && message.content.trim().replace(`<@!${client.user.id}>`, '').replace(`<@${client.user.id}>`, '').trim() === '';
 
   if (onlyMention) {
-    const config    = getDataConfig();
-    const emojiStr  = config.emojiId ? `<a:${EMOJI_NAME}:${config.emojiId}>` : '';
+    const mentionCfg = getDataConfig();
+    const emojiStr   = mentionCfg.emojiId ? `<a:${EMOJI_NAME}:${mentionCfg.emojiId}>` : '';
 
     const container = new ContainerBuilder()
       .setAccentColor(0x160a4d)

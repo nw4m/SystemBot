@@ -28,7 +28,7 @@ module.exports = {
           { name: 'Users',        value: `${users}`,                          inline: true },
           { name: 'Commands',     value: `${commands}`,                       inline: true },
           { name: 'Memory Usage', value: `${memUsage} MB`,                    inline: true },
-          { name: 'Library',      value: 'discord.js v14',                    inline: true },
+          { name: 'Library',      value: `discord.js v${require('discord.js').version}`, inline: true },
           { name: 'Node.js',      value: process.version,                     inline: true },
         ],
         client, guild: message.guild,

@@ -23,7 +23,9 @@ module.exports = {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     if (config.warnings?.[message.guild.id]?.[target.id]) {
       config.warnings[message.guild.id][target.id] = [];
-      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+      const tmp = configPath + '.tmp';
+      fs.writeFileSync(tmp, JSON.stringify(config, null, 2), 'utf8');
+      fs.renameSync(tmp, configPath);
     }
 
     return message.reply({

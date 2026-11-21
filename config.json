@@ -2,6 +2,31 @@
   "prefix": "!",
   "embedColor": "#fd6868",
   "emojiId": null,
+  "protection": {
+    "logChannel": "",
+    "whitelist": {
+      "users": [],
+      "roles": [],
+      "bots": []
+    },
+    "antiRaid": {
+      "enabled": false,
+      "joinRate": { "enabled": false, "count": 5, "seconds": 10, "action": "kick", "timeoutDuration": "1h" },
+      "accountAge": { "enabled": false, "days": 7, "action": "kick", "timeoutDuration": "1h" }
+    },
+    "antiNuke": {
+      "enabled": false,
+      "channelDelete": { "enabled": false, "count": 3, "seconds": 10, "action": "ban", "timeoutDuration": "1h" },
+      "channelCreate": { "enabled": false, "count": 3, "seconds": 10, "action": "ban", "timeoutDuration": "1h" },
+      "channelEdit":   { "enabled": false, "count": 5, "seconds": 10, "action": "ban", "timeoutDuration": "1h" },
+      "roleDelete":    { "enabled": false, "count": 3, "seconds": 10, "action": "ban", "timeoutDuration": "1h" },
+      "roleCreate":    { "enabled": false, "count": 3, "seconds": 10, "action": "ban", "timeoutDuration": "1h" },
+      "roleEdit":      { "enabled": false, "count": 5, "seconds": 10, "action": "ban", "timeoutDuration": "1h" },
+      "massBan":       { "enabled": false, "count": 3, "seconds": 10, "action": "ban", "timeoutDuration": "1h" },
+      "massKick":      { "enabled": false, "count": 3, "seconds": 10, "action": "ban", "timeoutDuration": "1h" },
+      "webhookCreate": { "enabled": false, "count": 2, "seconds": 10, "action": "ban", "timeoutDuration": "1h" }
+    }
+  },
   "permissions": {
     "ban": [],
     "unban": [],
