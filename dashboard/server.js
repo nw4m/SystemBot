@@ -107,6 +107,17 @@ function getContainerStats() {
   };
 }
 
+function getGuildInfo() {
+  if (!discordClient?.isReady()) return { guildName: 'N/A', guildIcon: null, totalMembers: 0 };
+  const guild = discordClient.guilds.cache.first();
+  if (!guild) return { guildName: 'N/A', guildIcon: null, totalMembers: 0 };
+  return {
+    guildName:    guild.name,
+    guildIcon:    guild.iconURL({ dynamic: true, size: 64 }),
+    totalMembers: guild.memberCount,
+  };
+}
+
 const ALL_COMMANDS = [
   'ban', 'unban', 'kick', 'mute', 'unmute', 'timeout', 'untimeout',
   'warn', 'warnings', 'clearwarnings', 'nickname', 'purge',
@@ -173,6 +184,7 @@ app.get('/settings', requireAuth, (req, res) => {
     username: req.session.username,
     config: getConfig(),
     commands: ALL_COMMANDS,
+    ...getGuildInfo(),
   });
 });
 
@@ -197,6 +209,7 @@ app.get('/warnings', requireAuth, (req, res) => {
   res.render('warnings', {
     username: req.session.username,
     warnings: getConfig().warnings || {},
+    ...getGuildInfo(),
   });
 });
 
@@ -304,6 +317,7 @@ app.get('/protection', requireAuth, (req, res) => {
   res.render('protection', {
     username: req.session.username,
     config,
+    ...getGuildInfo(),
   });
 });
 
@@ -365,6 +379,7 @@ app.get('/logs', requireAuth, (req, res) => {
     username: req.session.username,
     ...result,
     filters: { command, userId },
+    ...getGuildInfo(),
   });
 });
 

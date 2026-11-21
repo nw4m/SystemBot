@@ -1,6 +1,6 @@
 {
   "prefix": "!",
-  "embedColor": "#fd6868",
+  "embedColor": "#6881fd",
   "permissions": {
     "ban": [],
     "unban": [],
@@ -34,8 +34,18 @@
     "text": "Set your message from the dashboard.",
     "deleteCmd": false
   },
-  "warnings": {},
-  "emojiId": "1573658800341389515",
+  "warnings": {
+    "1538496315393187911": {
+      "1383887608127688806": [
+        {
+          "reason": "i love U",
+          "moderator": "1037400038629965854",
+          "date": "2026-11-21T13:36:28.845Z"
+        }
+      ]
+    }
+  },
+  "emojiId": "1573692218781335652",
   "protection": {
     "logChannel": "",
     "whitelist": {

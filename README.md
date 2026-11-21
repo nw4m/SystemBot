@@ -1,39 +1,69 @@
-# Discord System Bot
+# EL MOSHAKES
 
-Discord moderation bot built with discord.js v14, with a web dashboard for managing settings and permissions.
+A Discord moderation bot built with discord.js v14, featuring a web dashboard and server protection system.
+
+<div align="center">
+
+![Login](screenshots/login.png)
+
+</div>
+
+---
+
+## Dashboard
+
+<div align="center">
+
+![Overview](screenshots/overview.png)
+
+</div>
+
+<div align="center">
+
+| Members | Warnings |
+|:---:|:---:|
+| ![Members](screenshots/members.png) | ![Warnings](screenshots/warnings.png) |
+
+| Logs | Settings |
+|:---:|:---:|
+| ![Logs](screenshots/logs.png) | ![Settings](screenshots/settings.png) |
+
+</div>
+
+<div align="center">
+
+![Protection](screenshots/protection.png)
+
+</div>
 
 ---
 
 ## Setup
 
-### 1. Install dependencies
-
-```bash
+**1. Install dependencies**
+```
 npm install
 ```
 
-### 2. Configure environment
+**2. Configure environment**
 
 Copy `.env.example` to `.env` and fill in your values:
 
-| Variable              | Description                                    |
-|-----------------------|------------------------------------------------|
-| `TOKEN`               | Discord bot token                              |
-| `CLIENT_ID`           | Bot Application ID                             |
-| `GUILD_ID`            | Your server ID                                 |
-| `PREFIX`              | Command prefix (default `!`)                   |
-| `DASHBOARD_PORT`      | Dashboard port (default `3000`)                |
-| `DASHBOARD_SECRET`    | Random secret string for session encryption    |
-| `DASHBOARD_USERNAME`  | Dashboard login username                       |
-| `DASHBOARD_PASSWORD`  | Dashboard login password                       |
+| Variable | Description |
+|---|---|
+| `TOKEN` | Discord bot token |
+| `CLIENT_ID` | Bot Application ID |
+| `GUILD_ID` | Your server ID |
+| `PREFIX` | Command prefix (default `!`) |
+| `DASHBOARD_PORT` | Dashboard port (default `3000`) |
+| `DASHBOARD_SECRET` | Random secret string for session encryption |
+| `DASHBOARD_USERNAME` | Dashboard login username |
+| `DASHBOARD_PASSWORD` | Dashboard login password |
 
-### 3. Start
-
-```bash
+**3. Start**
+```
 node index.js
 ```
-
-This starts both the bot and the dashboard at the same time.
 
 Dashboard: `http://localhost:<DASHBOARD_PORT>`
 
@@ -44,7 +74,7 @@ Dashboard: `http://localhost:<DASHBOARD_PORT>`
 ### Moderation
 
 | Command | Aliases |
-|---------|---------|
+|---|---|
 | `!ban` | نكح, تف, سيف, إعدام, اعدم, تقليع, تفنيش, تلطيش, كربج, ban |
 | `!unban` | إفراج, افراج, اعفاء, unban |
 | `!kick` | برا, بره, اطرد, kick |
@@ -60,15 +90,11 @@ Dashboard: `http://localhost:<DASHBOARD_PORT>`
 | `!lock` | lk, قفل, lock |
 | `!unlock` | ulk, فك, افتحه, unlock |
 | `!slowmode` | sm |
-| `!channelinfo` | ci, channelinfo |
-| `!roleadd` | ra, خد, حط, give |
-| `!roleremove` | rr, شيل, هات, remove |
-| `!role` | r |
 
 ### Utility
 
 | Command | Aliases |
-|---------|---------|
+|---|---|
 | `!ping` | pong |
 | `!help` | h, commands |
 | `!userinfo` | ui, whois |
@@ -76,73 +102,77 @@ Dashboard: `http://localhost:<DASHBOARD_PORT>`
 | `!avatar` | av, pfp |
 | `!botinfo` | bi, info |
 | `!afk` | away |
+| `!channelinfo` | ci |
+| `!roleadd` | ra, خد, حط, give |
+| `!roleremove` | rr, شيل, هات, remove |
+| `!role` | r |
 | `!خط` | khat, line |
 
 ---
 
 ## Permissions System
 
-- **Roles configured in dashboard** — only members with that role can use the command.
-- **No roles configured (empty)** — falls back to Discord's native permissions (e.g. `!ban` requires `Ban Members`).
-- **Administrators** always bypass all permission checks.
-- **Denied users** — bot stays completely silent, no response.
+- Roles configured in dashboard — only members with that role can use the command.
+- No roles configured (empty) — falls back to Discord's native permissions.
+- Administrators always bypass all permission checks.
+- Members with equal or higher roles than the moderator are protected from moderation actions.
 
-### Discord Permission Defaults
+---
 
-| Command | Required Discord Permission |
-|---------|----------------------------|
-| ban, unban | Ban Members |
-| kick | Kick Members |
-| mute, unmute, timeout, untimeout, warn, warnings, clearwarnings | Moderate Members |
-| nickname | Manage Nicknames |
-| purge | Manage Messages |
-| lock, unlock, slowmode | Manage Channels |
-| roleadd, roleremove | Manage Roles |
-| ping, help, userinfo, serverinfo, avatar, botinfo, afk, خط | Everyone |
+## Protection System
+
+### Anti-Nuke
+
+Detects and responds to mass destructive actions. Each feature is configurable independently with its own threshold, window, and punishment.
+
+| Feature | Trigger |
+|---|---|
+| Channel Delete | Mass channel deletion |
+| Channel Create | Mass channel creation |
+| Channel Edit | Mass channel edits |
+| Role Delete | Mass role deletion |
+| Role Create | Mass role creation |
+| Role Edit | Mass role edits |
+| Mass Ban | Multiple bans in a short time |
+| Mass Kick | Multiple kicks in a short time |
+| Webhook Create | Mass webhook creation |
+
+When triggered, the bot punishes the executor and **restores** the deleted or modified resource from the last snapshot.
+
+### Anti-Raid
+
+| Feature | Trigger |
+|---|---|
+| Join Rate | Too many users joining in a short time |
+| Account Age | Account created too recently |
+
+### Whitelist
+
+Users, roles, and bots can be whitelisted from the dashboard — the bot ignores all their actions.
+
+### Actions
+
+Each protection feature supports: `ban`, `kick`, `timeout` (with configurable duration).
 
 ---
 
 ## Dashboard Pages
 
 | Page | URL | Description |
-|------|-----|-------------|
+|---|---|---|
 | Overview | `/dashboard` | Bot status, server info, container stats |
 | Moderators | `/members` | Members with mod permissions and their allowed commands |
-| Command Logs | `/logs` | Log of every command used — who, when, where, result |
+| Command Logs | `/logs` | Log of every command used |
 | Settings | `/settings` | Prefix, embed color, per-command role permissions, `!خط` message |
 | Warnings | `/warnings` | View and clear member warnings |
-
----
-
-## Project Structure
-
-```
-├── index.js                    # Bot entry point + dashboard launcher
-├── config.json                 # Default config (copied to data/ on first run)
-├── .env                        # Environment variables
-├── commands/
-│   ├── moderation/             # ban, kick, mute, timeout, warn, lock...
-│   └── utility/                # ping, help, userinfo, afk, خط...
-├── utils/
-│   ├── embedBuilder.js         # Embed builder (color #fd6868)
-│   ├── permissionCheck.js      # Role-based permission checker
-│   └── logger.js               # Command execution logger
-├── data/
-│   ├── config.json             # Live config (writable)
-│   └── logs.json               # Command logs
-└── dashboard/
-    ├── server.js               # Express dashboard server
-    ├── public/style.css        # Dashboard CSS
-    └── views/                  # EJS templates
-```
+| Protection | `/protection` | Anti-Raid and Anti-Nuke configuration |
 
 ---
 
 ## Required Bot Permissions
 
-- Administrator (recommended), or:
+Administrator (recommended), or:
 - Ban Members, Kick Members, Moderate Members
 - Manage Messages, Manage Channels, Manage Roles, Manage Nicknames
 - Send Messages, Embed Links, Read Message History
-
-The bot's role must be **higher** than any role it manages in the hierarchy.
+- View Audit Log (required for protection system)
