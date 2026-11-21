@@ -1,6 +1,7 @@
 {
   "prefix": "!",
   "embedColor": "#fd6868",
+  "emojiId": null,
   "permissions": {
     "ban": [],
     "unban": [],

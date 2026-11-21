@@ -1,7 +1,8 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, Partials, ActivityType } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, Partials, ActivityType, ComponentType, ContainerBuilder, TextDisplayBuilder, SectionBuilder, ThumbnailBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const fs   = require('fs');
 const path = require('path');
+const https = require('https');
 
 const { setClient }     = require('./dashboard/server.js');
 const { logCommand }    = require('./utils/logger');
@@ -17,6 +18,58 @@ const client = new Client({
   ],
   partials: [Partials.Message, Partials.Channel, Partials.GuildMember],
 });
+
+const EMOJI_URL  = 'https://cdn.discordapp.com/emojis/1524310663273517136.webp?size=96&animated=true';
+const EMOJI_NAME = 'i_23';
+
+function getDataConfig() {
+  const p = path.join(__dirname, 'data/config.json');
+  return JSON.parse(fs.readFileSync(p, 'utf8'));
+}
+
+function saveDataConfig(cfg) {
+  const p = path.join(__dirname, 'data/config.json');
+  fs.writeFileSync(p, JSON.stringify(cfg, null, 2), 'utf8');
+}
+
+function fetchBuffer(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, res => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+async function ensureBotEmoji() {
+  try {
+    const config = getDataConfig();
+
+    if (config.emojiId) {
+      // verify it still exists via REST
+      const existing = await client.rest.get(`/applications/${client.application.id}/emojis`)
+        .catch(() => null);
+      if (existing?.items?.some(e => e.id === config.emojiId)) {
+        console.log(`[EMOJI] Already uploaded (${config.emojiId})`);
+        return;
+      }
+      console.log('[EMOJI] Cached ID not found, re-uploading…');
+    }
+
+    const buf     = await fetchBuffer(EMOJI_URL);
+    const b64     = `data:image/webp;base64,${buf.toString('base64')}`;
+    const created = await client.rest.post(`/applications/${client.application.id}/emojis`, {
+      body: { name: EMOJI_NAME, image: b64 },
+    });
+    config.emojiId = created.id;
+    saveDataConfig(config);
+    console.log(`[EMOJI] Uploaded successfully (${created.id})`);
+  } catch (err) {
+    console.error('[EMOJI] Failed to upload emoji:', err.message);
+  }
+}
 
 client.commands = new Collection();
 client.afkUsers = new Map();
@@ -39,9 +92,12 @@ for (const folder of commandFolders) {
   }
 }
 
-client.once('ready', () => {
+client.once('ready', async () => {
   console.log(`[BOT] Logged in as ${client.user.tag}`);
   setClient(client);
+
+  // Upload emoji once and cache the ID in data/config.json
+  await ensureBotEmoji();
 
   const statuses = ['مشاكس', 'idk', 'بص هقولك', 'لا'];
   let i = 0;
@@ -89,8 +145,32 @@ client.on('messageCreate', async (message) => {
     })] }).catch(() => {});
   }
 
-  if (!message.content.startsWith(prefix)) return;
+  // Bot mention reply
+  const onlyMention = message.mentions.users.has(client.user.id)
+    && !message.mentions.everyone
+    && message.content.trim().replace(`<@!${client.user.id}>`, '').replace(`<@${client.user.id}>`, '').trim() === '';
 
+  if (onlyMention) {
+    const config    = getDataConfig();
+    const emojiStr  = config.emojiId ? `<a:${EMOJI_NAME}:${config.emojiId}>` : '';
+
+    const container = new ContainerBuilder()
+      .setAccentColor(0x160a4d)
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `Hello! I'm ${client.user} ${emojiStr}\n\nI was created by <@1037400038629965854>, and this project is open source.\n\nYou can browse the code on [Github](https://github.com/nw4m/SystemBot)`
+        )
+      );
+
+    await message.reply({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
+      allowedMentions: { repliedUser: false },
+    }).catch(() => {});
+    return;
+  }
+
+  if (!message.content.startsWith(prefix)) return;
   const args      = message.content.slice(prefix.length).trim().split(/ +/);
   const usedAlias = args.shift().toLowerCase();
   const command   = client.commands.get(usedAlias);
