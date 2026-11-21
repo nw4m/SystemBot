@@ -1,4 +1,4 @@
-# EL MOSHAKES
+# system bot
 
 A Discord moderation bot built with discord.js v14, featuring a web dashboard and server protection system.
 
