@@ -4,7 +4,10 @@ const path = require('path');
 
 const configPath = path.join(__dirname, '../../data/config.json');
 
-function getConfig()     { return JSON.parse(fs.readFileSync(configPath, 'utf8')); }
+function getConfig() {
+  try { return JSON.parse(fs.readFileSync(configPath, 'utf8')); }
+  catch { return { warnings: {} }; }
+}
 function saveConfig(cfg) {
   const tmp = configPath + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(cfg, null, 2), 'utf8');
@@ -19,8 +22,9 @@ module.exports = {
 
   async execute(message, args, client) {
     const rawTarget = args[0]?.replace(/[<@!>]/g, '') || '';
-    const target = (rawTarget ? await message.guild.members.fetch(rawTarget).catch(() => null) : null)
-      || message.mentions.members.first();
+    const target = rawTarget
+      ? await message.guild.members.fetch(rawTarget).catch(() => null)
+      : null;
 
     if (!target) {
       return message.reply({

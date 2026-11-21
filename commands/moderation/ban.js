@@ -8,8 +8,9 @@ module.exports = {
 
   async execute(message, args, client) {
     const rawTarget = args[0]?.replace(/[<@!>]/g, '') || '';
-    const target = (rawTarget ? await message.guild.members.fetch(rawTarget).catch(() => null) : null)
-      || message.mentions.members.first();
+    const target = rawTarget
+      ? await message.guild.members.fetch(rawTarget).catch(() => null)
+      : null;
 
     if (!target) {
       return message.reply({

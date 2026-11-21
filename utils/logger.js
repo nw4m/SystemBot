@@ -17,7 +17,9 @@ function readLogs() {
 }
 
 function writeLogs(logs) {
-  fs.writeFileSync(LOGS_FILE, JSON.stringify(logs, null, 2), 'utf8');
+  const tmp = LOGS_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(logs, null, 2), 'utf8');
+  fs.renameSync(tmp, LOGS_FILE);
 }
 
 function logCommand(entry) {

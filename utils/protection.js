@@ -28,7 +28,8 @@ async function takeSnapshot(guild) {
     if (!cfg.protection?.antiNuke?.enabled) return;
 
     for (const [key] of trackers) {
-      if (trackers.get(key)?.length > 0) return;
+      const times = trackers.get(key) || [];
+      if (times.some(t => Date.now() - t < 60000)) return;
     }
     const roles    = [];
     const channels = [];

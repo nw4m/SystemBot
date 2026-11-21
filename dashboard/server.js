@@ -21,14 +21,15 @@ const configSrc  = path.join(__dirname, '../config.json');
 const INSECURE_SECRET = 'supersecretkey';
 const INSECURE_PASS   = 'admin123';
 
-if (!process.env.DASHBOARD_SECRET || process.env.DASHBOARD_SECRET === INSECURE_SECRET) {
-  console.error('[DASHBOARD] FATAL: DASHBOARD_SECRET is missing or uses the insecure default. Set a strong secret in .env and restart.');
-  process.exit(1);
+function isInsecure(val, label) {
+  if (!val) { console.error(`[DASHBOARD] FATAL: ${label} is not set in .env.`); return true; }
+  if (val === INSECURE_SECRET || val === INSECURE_PASS) { console.error(`[DASHBOARD] FATAL: ${label} uses an insecure default value.`); return true; }
+  if (val.startsWith('change_this')) { console.error(`[DASHBOARD] FATAL: ${label} still uses the placeholder value from .env.example.`); return true; }
+  return false;
 }
-if (!process.env.DASHBOARD_PASSWORD || process.env.DASHBOARD_PASSWORD === INSECURE_PASS) {
-  console.error('[DASHBOARD] FATAL: DASHBOARD_PASSWORD is missing or uses the insecure default. Set a strong password in .env and restart.');
-  process.exit(1);
-}
+
+if (isInsecure(process.env.DASHBOARD_SECRET, 'DASHBOARD_SECRET')) process.exit(1);
+if (isInsecure(process.env.DASHBOARD_PASSWORD, 'DASHBOARD_PASSWORD')) process.exit(1);
 
 const loginAttempts = new Map();
 
@@ -82,11 +83,17 @@ app.use((req, res, next) => {
   next();
 });
 
+if (process.env.TRUST_PROXY === '1') app.set('trust proxy', 1);
+
 app.use(session({
   secret: process.env.DASHBOARD_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 24, sameSite: 'lax', secure: false },
+  cookie: {
+    maxAge:   1000 * 60 * 60 * 24,
+    sameSite: 'lax',
+    secure:   process.env.COOKIE_SECURE === '1',
+  },
 }));
 
 app.use(flash());
@@ -121,7 +128,8 @@ function requireAuth(req, res, next) {
 }
 
 function getConfig() {
-  return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  try { return JSON.parse(fs.readFileSync(configPath, 'utf8')); }
+  catch { return {}; }
 }
 
 function saveConfig(data) {
