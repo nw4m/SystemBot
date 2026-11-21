@@ -13,9 +13,14 @@ module.exports = {
 
   async execute(message, args, client) {
     const rawTarget = args[0]?.replace(/[<@!>]/g, '') || '';
-    const target = rawTarget
+    let target = rawTarget
       ? await message.guild.members.fetch(rawTarget).catch(() => null)
       : null;
+
+    if (!target && message.reference) {
+      const replied = await message.fetchReference().catch(() => null);
+      if (replied) target = await message.guild.members.fetch(replied.author.id).catch(() => null);
+    }
 
     if (!target) {
       return message.reply({
