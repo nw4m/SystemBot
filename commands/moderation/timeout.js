@@ -61,7 +61,7 @@ module.exports = {
       }
     }
 
-    const reason = args.slice(reasonStart).join(' ') || 'No reason provided.';
+    const reason = (args.slice(reasonStart).join(' ') || 'No reason provided.').slice(0, 512);
     await target.timeout(duration, reason);
 
     return message.reply({

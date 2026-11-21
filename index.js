@@ -1,3 +1,10 @@
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED REJECTION]', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err);
+});
+
 require('dotenv').config();
 const { Client, GatewayIntentBits, Collection, Partials, ActivityType, ContainerBuilder, TextDisplayBuilder, MessageFlags } = require('discord.js');
 const fs   = require('fs');
@@ -128,7 +135,7 @@ client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.guild) return;
 
   const cfg    = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/config.json'), 'utf8'));
-  const prefix = process.env.PREFIX || cfg.prefix || '!';
+  const prefix = cfg.prefix || '!';
 
   if (message.mentions.users.size > 0) {
     for (const [id, afkData] of client.afkUsers) {
@@ -138,7 +145,7 @@ client.on('messageCreate', async (message) => {
           title: 'AFK Notice',
           description: `<@${id}> is currently AFK.\nReason: **${afkData.reason}**`,
           client, guild: message.guild,
-        })] }).catch(() => {});
+        })], allowedMentions: { parse: [] } }).catch(() => {});
       }
     }
   }
@@ -150,7 +157,7 @@ client.on('messageCreate', async (message) => {
       title: 'Welcome Back',
       description: `Welcome back, ${message.author.username}! Your AFK status has been removed.`,
       client, guild: message.guild,
-    })] }).catch(() => {});
+    })], allowedMentions: { parse: [] } }).catch(() => {});
   }
 
   // Bot mention reply
@@ -187,14 +194,6 @@ client.on('messageCreate', async (message) => {
   const permitted = await hasPermission(message, command.name, client);
 
   if (!permitted) {
-    logCommand({
-      command: command.name, usedAlias, args: args.join(' '),
-      userId: message.author.id, username: message.author.tag,
-      guildId: message.guild.id, guildName: message.guild.name,
-      channelId: message.channel.id, channelName: message.channel.name,
-      messageId: message.id, permitted: false, botReply: null,
-      success: false, error: 'Permission denied',
-    });
     return;
   }
 

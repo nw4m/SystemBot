@@ -27,8 +27,7 @@ module.exports = {
       });
     }
 
-    const reason = args.slice(1).join(' ') || 'No reason provided.';
-    const config = getConfig();
+    const reason = (args.slice(1).join(' ') || 'No reason provided.').slice(0, 512);
 
     if (!config.warnings[message.guild.id])          config.warnings[message.guild.id] = {};
     if (!config.warnings[message.guild.id][target.id]) config.warnings[message.guild.id][target.id] = [];

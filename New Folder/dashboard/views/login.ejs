@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EL MOSHAKES</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #000;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    /* ── Video ── */
+    #bg-video {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      opacity: 0;
+      transition: opacity 1.4s ease;
+    }
+    #bg-video.ready { opacity: 1; }
+
+    /* ── Scanlines overlay ── */
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(0,0,0,.18) 2px,
+        rgba(0,0,0,.18) 4px
+      );
+      pointer-events: none;
+    }
+
+    /* ── Dark overlay ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      background: rgba(0, 5, 20, .38);
+    }
+
+    /* ── Main layout ── */
+    .wrap {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 0;
+    }
+
+    /* ── Form container (sits on top of logo center) ── */
+    .form-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      animation: fadeIn .8s ease both;
+      animation-delay: .5s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Alerts ── */
+    .alert {
+      padding: 7px 18px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid;
+      font-family: -apple-system, sans-serif;
+      margin-bottom: 4px;
+      text-align: center;
+    }
+    .alert-error   { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.5); color: #fca5a5; }
+    .alert-success { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.5);  color: #86efac; }
+
+    /* ── Inputs ── */
+    .input-row {
+      display: flex;
+      align-items: center;
+      background: rgba(100, 180, 255, .10);
+      border: 1px solid rgba(100, 200, 255, .35);
+      border-radius: 3px;
+      width: 220px;
+      overflow: hidden;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .input-row:focus-within {
+      border-color: rgba(100, 220, 255, .8);
+      box-shadow: 0 0 10px rgba(80, 200, 255, .3);
+    }
+
+    .input-icon {
+      padding: 0 10px;
+      color: rgba(100, 200, 255, .7);
+      font-size: 13px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .input-row input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #c8e8ff;
+      font-size: 13px;
+      padding: 8px 10px 8px 0;
+      width: 100%;
+      font-family: -apple-system, sans-serif;
+      letter-spacing: .03em;
+    }
+
+    .input-row input::placeholder { color: rgba(150, 200, 255, .4); }
+
+    /* ── Show password toggle ── */
+    .show-pass {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: rgba(150, 200, 255, .6);
+      cursor: pointer;
+      user-select: none;
+      font-family: -apple-system, sans-serif;
+      align-self: flex-start;
+      margin-left: 4px;
+    }
+
+    .show-pass input[type="checkbox"] {
+      accent-color: #5bc8f5;
+      width: 12px;
+      height: 12px;
+      cursor: pointer;
+    }
+
+    /* ── Login button ── */
+    .btn-login {
+      width: 220px;
+      padding: 9px;
+      background: rgba(80, 160, 255, .18);
+      border: 1px solid rgba(100, 200, 255, .5);
+      color: #c8e8ff;
+      border-radius: 3px;
+      font-size: 13px;
+      font-family: -apple-system, sans-serif;
+      cursor: pointer;
+      letter-spacing: .08em;
+      transition: background .2s, box-shadow .2s;
+      margin-top: 2px;
+    }
+
+    .btn-login:hover {
+      background: rgba(80, 160, 255, .3);
+      box-shadow: 0 0 14px rgba(80, 180, 255, .35);
+    }
+
+    /* ── Bottom branding ── */
+    .branding {
+      position: fixed;
+      bottom: 48px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      z-index: 3;
+      animation: fadeIn 1s ease both;
+      animation-delay: .8s;
+    }
+
+    .brand-title {
+      font-size: 28px;
+      font-style: italic;
+      color: rgba(160, 210, 255, .55);
+      text-shadow: 0 0 20px rgba(80, 180, 255, .4);
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+
+    .brand-sub {
+      font-size: 14px;
+      font-style: italic;
+      color: rgba(140, 190, 255, .38);
+      text-shadow: 0 0 12px rgba(80, 180, 255, .25);
+      margin-top: 4px;
+      letter-spacing: .05em;
+    }
+  </style>
+</head>
+<body>
+
+  <video id="bg-video" src="/assets/bg.mp4" muted playsinline></video>
+  <div class="scanlines"></div>
+  <div class="overlay"></div>
+  <audio id="boot-snd" src="/assets/boot.mp3" preload="auto"></audio>
+
+  <div class="wrap">
+    <div class="form-box">
+
+      <% if (error && error.length > 0) { %>
+        <div class="alert alert-error"><%= error[0] %></div>
+      <% } %>
+      <% if (success && success.length > 0) { %>
+        <div class="alert alert-success"><%= success[0] %></div>
+      <% } %>
+
+      <form method="POST" action="/login" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+
+        <div class="input-row">
+          <span class="input-icon">&#9786;</span>
+          <input type="text" name="username" placeholder="Username" required autocomplete="off" />
+        </div>
+
+        <div class="input-row" id="pass-row">
+          <span class="input-icon">&#8226;&#8226;&#8226;</span>
+          <input type="password" name="password" id="pass-input" placeholder="Password" required />
+        </div>
+
+        <label class="show-pass">
+          <input type="checkbox" id="show-pass-cb" onchange="togglePass()" />
+          Show Password
+        </label>
+
+        <button type="submit" class="btn-login">Login</button>
+
+      </form>
+    </div>
+  </div>
+
+
+
+  <script>
+    const video = document.getElementById('bg-video');
+    const sound = document.getElementById('boot-snd');
+    let soundPlayed = false;
+
+    function tryPlaySound() {
+      if (soundPlayed) return;
+      soundPlayed = true;
+      sound.play().catch(() => {});
+    }
+
+    video.addEventListener('canplay', () => {
+      video.classList.add('ready');
+      video.play().catch(() => {});
+    });
+
+    document.addEventListener('click',  tryPlaySound);
+    document.addEventListener('keydown', tryPlaySound);
+
+    function togglePass() {
+      const cb    = document.getElementById('show-pass-cb');
+      const input = document.getElementById('pass-input');
+      input.type  = cb.checked ? 'text' : 'password';
+    }
+  </script>
+
+</body>
+</html>

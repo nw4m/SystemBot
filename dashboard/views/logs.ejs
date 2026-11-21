@@ -19,6 +19,7 @@
           <p><%= total %> entries recorded</p>
         </div>
         <form method="POST" action="/logs/clear" onsubmit="return confirm('Clear all logs?')">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <button type="submit" class="btn btn-danger btn-sm">Clear All Logs</button>
         </form>
       </div>

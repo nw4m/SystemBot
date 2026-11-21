@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Protection - Bot Dashboard</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="layout">
+  <%- include('partials/sidebar', { page: 'protection', username }) %>
+
+  <main class="main-content">
+
+    <div class="page-header">
+      <h1>Protection</h1>
+      <p>Configure Anti-Raid and Anti-Nuke settings</p>
+    </div>
+
+    <% if (success && success.length > 0) { %>
+      <div class="alert alert-success"><%= success[0] %></div>
+    <% } %>
+    <% if (error && error.length > 0) { %>
+      <div class="alert alert-error"><%= error[0] %></div>
+    <% } %>
+
+    <form method="POST" action="/protection">
+
+      <%
+        const p   = config.protection;
+        const wl  = p.whitelist;
+        const ar  = p.antiRaid;
+        const an  = p.antiNuke;
+        const ACTIONS = ['ban', 'kick', 'timeout'];
+        function checked(val) { return val ? 'checked' : ''; }
+        function sel(cur, opt) { return cur === opt ? 'selected' : ''; }
+      %>
+
+      <div class="card">
+        <div class="card-header">General</div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="logChannel">Log Channel ID</label>
+              <input type="text" id="logChannel" name="logChannel" value="<%= p.logChannel || '' %>" placeholder="Channel ID for protection logs" />
+              <small>All protection actions will be logged here</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Whitelist</div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Whitelisted Users</label>
+              <textarea name="wl_users" rows="3" placeholder="User IDs, one per line or comma-separated"><%= (wl.users || []).join('\n') %></textarea>
+              <small>These users are ignored by all protection systems</small>
+            </div>
+            <div class="form-group">
+              <label>Whitelisted Roles</label>
+              <textarea name="wl_roles" rows="3" placeholder="Role IDs, one per line or comma-separated"><%= (wl.roles || []).join('\n') %></textarea>
+              <small>Members with these roles are ignored</small>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:4px">
+            <label>Whitelisted Bots</label>
+            <textarea name="wl_bots" rows="3" placeholder="Bot IDs, one per line or comma-separated"><%= (wl.bots || []).join('\n') %></textarea>
+            <small>These bots are ignored by all protection systems</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          Anti-Raid
+          <label class="toggle-label" style="margin-left:auto">
+            <input type="checkbox" name="antiRaid_enabled" <%= checked(ar.enabled) %> />
+            <span class="toggle-text">Enabled</span>
+          </label>
+        </div>
+        <div class="card-body">
+
+          <div class="prot-feature">
+            <div class="prot-feature-header">
+              <label class="toggle-label">
+                <input type="checkbox" name="joinRate_enabled" <%= checked(ar.joinRate?.enabled) %> />
+                <span class="toggle-text" style="font-weight:600">Join Rate</span>
+              </label>
+              <small>Trigger when too many users join in a short time</small>
+            </div>
+            <div class="prot-feature-body">
+              <div class="prot-row">
+                <div class="form-group">
+                  <label>Joins</label>
+                  <input type="number" name="joinRate_count" value="<%= ar.joinRate?.count ?? 5 %>" min="1" max="100" />
+                </div>
+                <div class="form-group">
+                  <label>Seconds</label>
+                  <input type="number" name="joinRate_seconds" value="<%= ar.joinRate?.seconds ?? 10 %>" min="1" max="3600" />
+                </div>
+                <div class="form-group">
+                  <label>Action</label>
+                  <select name="joinRate_action">
+                    <% for (const a of ACTIONS) { %><option value="<%= a %>" <%= sel(ar.joinRate?.action, a) %>><%= a %></option><% } %>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Timeout Duration</label>
+                  <input type="text" name="joinRate_timeoutDuration" value="<%= ar.joinRate?.timeoutDuration || '1h' %>" placeholder="e.g. 1h, 30m" />
+                  <small>Only used if action is timeout</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="prot-feature" style="margin-top:16px">
+            <div class="prot-feature-header">
+              <label class="toggle-label">
+                <input type="checkbox" name="accountAge_enabled" <%= checked(ar.accountAge?.enabled) %> />
+                <span class="toggle-text" style="font-weight:600">Account Age</span>
+              </label>
+              <small>Trigger when a new account joins below a minimum age</small>
+            </div>
+            <div class="prot-feature-body">
+              <div class="prot-row">
+                <div class="form-group">
+                  <label>Minimum Age (days)</label>
+                  <input type="number" name="accountAge_days" value="<%= ar.accountAge?.days ?? 7 %>" min="1" max="3650" />
+                </div>
+                <div class="form-group">
+                  <label>Action</label>
+                  <select name="accountAge_action">
+                    <% for (const a of ACTIONS) { %><option value="<%= a %>" <%= sel(ar.accountAge?.action, a) %>><%= a %></option><% } %>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Timeout Duration</label>
+                  <input type="text" name="accountAge_timeoutDuration" value="<%= ar.accountAge?.timeoutDuration || '1h' %>" placeholder="e.g. 1h, 30m" />
+                  <small>Only used if action is timeout</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          Anti-Nuke
+          <label class="toggle-label" style="margin-left:auto">
+            <input type="checkbox" name="antiNuke_enabled" <%= checked(an.enabled) %> />
+            <span class="toggle-text">Enabled</span>
+          </label>
+        </div>
+        <div class="card-body">
+
+          <%
+            const nukeFeatures = [
+              { key: 'channelDelete', label: 'Channel Delete', desc: 'Mass channel deletion' },
+              { key: 'channelCreate', label: 'Channel Create', desc: 'Mass channel creation' },
+              { key: 'channelEdit',   label: 'Channel Edit',   desc: 'Mass channel edits' },
+              { key: 'roleDelete',    label: 'Role Delete',    desc: 'Mass role deletion' },
+              { key: 'roleCreate',    label: 'Role Create',    desc: 'Mass role creation' },
+              { key: 'roleEdit',      label: 'Role Edit',      desc: 'Mass role edits' },
+              { key: 'massBan',       label: 'Mass Ban',       desc: 'Multiple bans in a short time' },
+              { key: 'massKick',      label: 'Mass Kick',      desc: 'Multiple kicks in a short time' },
+              { key: 'webhookCreate', label: 'Webhook Create', desc: 'Mass webhook creation' },
+            ];
+          %>
+
+          <% for (const feat of nukeFeatures) { %>
+            <div class="prot-feature" style="margin-bottom:16px">
+              <div class="prot-feature-header">
+                <label class="toggle-label">
+                  <input type="checkbox" name="<%= feat.key %>_enabled" <%= checked(an[feat.key]?.enabled) %> />
+                  <span class="toggle-text" style="font-weight:600"><%= feat.label %></span>
+                </label>
+                <small><%= feat.desc %></small>
+              </div>
+              <div class="prot-feature-body">
+                <div class="prot-row">
+                  <div class="form-group">
+                    <label>Count</label>
+                    <input type="number" name="<%= feat.key %>_count" value="<%= an[feat.key]?.count ?? 3 %>" min="1" max="100" />
+                  </div>
+                  <div class="form-group">
+                    <label>Seconds</label>
+                    <input type="number" name="<%= feat.key %>_seconds" value="<%= an[feat.key]?.seconds ?? 10 %>" min="1" max="3600" />
+                  </div>
+                  <div class="form-group">
+                    <label>Action</label>
+                    <select name="<%= feat.key %>_action">
+                      <% for (const a of ACTIONS) { %><option value="<%= a %>" <%= sel(an[feat.key]?.action, a) %>><%= a %></option><% } %>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Timeout Duration</label>
+                    <input type="text" name="<%= feat.key %>_timeoutDuration" value="<%= an[feat.key]?.timeoutDuration || '1h' %>" placeholder="e.g. 1h, 30m" />
+                    <small>Only used if action is timeout</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% } %>
+
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Protection Settings</button>
+        <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+      </div>
+
+    </form>
+  </main>
+</div>
+</body>
+</html>

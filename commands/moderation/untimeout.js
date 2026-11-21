@@ -22,7 +22,7 @@ module.exports = {
       });
     }
 
-    const reason = args.slice(1).join(' ') || 'No reason provided.';
+    const reason = (args.slice(1).join(' ') || 'No reason provided.').slice(0, 512);
     await target.timeout(null, reason);
 
     return message.reply({

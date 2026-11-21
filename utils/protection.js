@@ -24,6 +24,8 @@ function saveSnapshot(data) {
 
 async function takeSnapshot(guild) {
   try {
+    const cfg = getConfig();
+    if (!cfg.protection?.antiNuke?.enabled) return;
     const roles    = [];
     const channels = [];
 
@@ -190,6 +192,8 @@ async function handleNukeEvent(client, guild, userId, featureKey, reason, restor
   let member = null;
   try { member = await guild.members.fetch(userId).catch(() => null); } catch {}
 
+  if (userId === guild.members.me?.id) return;
+
   const isBot = member?.user?.bot || false;
   if (isWhitelisted(config, userId, member, isBot)) return;
 
@@ -277,7 +281,13 @@ async function onGuildBanAdd(client, ban) {
 }
 
 async function onMemberRemove(client, member) {
-  const executor = await getAuditExecutor(member.guild, 20);
+  const logs = await member.guild.fetchAuditLogs({ limit: 1, type: 20 }).catch(() => null);
+  if (!logs) return;
+  const entry = logs.entries.first();
+  if (!entry) return;
+  if (Date.now() - entry.createdTimestamp > 3000) return;
+  if (entry.target?.id !== member.id) return;
+  const executor = entry.executor?.id;
   if (!executor) return;
   await handleNukeEvent(client, member.guild, executor, 'massKick', 'Mass kick detected', null);
 }

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Overview - Bot Dashboard</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="layout">
+  <%- include('partials/sidebar', { page: 'dashboard', username }) %>
+
+  <main class="main-content">
+
+    <div class="page-header">
+      <div class="page-header-row">
+        <div>
+          <h1>Overview</h1>
+          <p>Welcome back, <strong><%= username %></strong></p>
+        </div>
+        <div class="status-pill <%= botOnline ? 'online' : 'offline' %>">
+          <span class="status-dot"></span>
+          <%= botOnline ? 'Bot Online' : 'Bot Offline' %>
+        </div>
+      </div>
+    </div>
+
+    <% if (success && success.length > 0) { %>
+      <div class="alert alert-success"><%= success[0] %></div>
+    <% } %>
+    <% if (error && error.length > 0) { %>
+      <div class="alert alert-error"><%= error[0] %></div>
+    <% } %>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value"><%= totalMembers %></div>
+        <div class="stat-label">Server Members</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><%= totalCommands %></div>
+        <div class="stat-label">Commands</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><%= totalWarnings %></div>
+        <div class="stat-label">Total Warnings</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><%= botPing %>ms</div>
+        <div class="stat-label">Bot Ping</div>
+      </div>
+    </div>
+
+    <!-- Server Info -->
+    <% if (botOnline) { %>
+    <div class="card">
+      <div class="card-header">Server Info</div>
+      <div class="card-body server-info-row">
+        <% if (guildIcon) { %>
+          <img src="<%= guildIcon %>" class="guild-icon" alt="server icon" />
+        <% } %>
+        <div>
+          <div class="guild-name"><%= guildName %></div>
+          <div class="guild-sub"><%= totalMembers %> members</div>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Quick Links -->
+    <div class="card">
+      <div class="card-header">Quick Links</div>
+      <div class="card-body quick-actions">
+        <a href="/settings" class="btn btn-primary">Permissions</a>
+        <a href="/members"  class="btn btn-secondary">Members</a>
+        <a href="/warnings" class="btn btn-secondary">Warnings</a>
+      </div>
+    </div>
+
+    <!-- Container Stats -->
+    <div class="card">
+      <div class="card-header">
+        Container Stats
+        <span class="refresh-note">Auto-refreshes every 10s</span>
+      </div>
+      <div class="card-body" id="containerStats">
+        <div class="two-col-stats">
+          <div class="stat-row"><span class="stat-key">Process Memory (RSS)</span><span class="stat-val" id="c-rss"><%= container.rss %></span></div>
+          <div class="stat-row"><span class="stat-key">Heap Used</span><span class="stat-val" id="c-heap"><%= container.heapUsed %> / <%= container.heapTotal %></span></div>
+          <div class="stat-row"><span class="stat-key">Container RAM Used</span>
+            <span class="stat-val">
+              <div class="progress-wrap">
+                <div class="progress-bar" id="c-mem-bar" style="width:<%= parseFloat(container.memPct) %>%"></div>
+              </div>
+              <span id="c-mem-lbl"><%= container.usedMem %> / <%= container.totalMem %> (<%= container.memPct %>)</span>
+            </span>
+          </div>
+          <div class="stat-row"><span class="stat-key">Bot Uptime</span><span class="stat-val" id="c-uptime"><%= container.uptime %></span></div>
+          <div class="stat-row"><span class="stat-key">Node.js</span><span class="stat-val"><code><%= container.nodeVer %></code></span></div>
+          <div class="stat-row"><span class="stat-key">Process ID</span><span class="stat-val"><code><%= container.pid %></code></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bot Config -->
+    <div class="card">
+      <div class="card-header">Bot Configuration</div>
+      <div class="card-body">
+        <div class="two-col-stats">
+          <div class="stat-row">
+            <span class="stat-key">Prefix</span>
+            <span class="stat-val"><code><%= config.prefix %></code></span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-key">Embed Color</span>
+            <span class="stat-val">
+              <span class="color-swatch" style="background:<%= config.embedColor %>"></span>
+              <code><%= config.embedColor %></code>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+setInterval(async () => {
+  try {
+    const r    = await fetch('/api/container');
+    const data = await r.json();
+    const set  = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('c-rss',    data.rss);
+    set('c-heap',   data.heapUsed + ' / ' + data.heapTotal);
+    set('c-uptime', data.uptime);
+    set('c-mem-lbl', data.usedMem + ' / ' + data.totalMem + ' (' + data.memPct + ')');
+    const bar = document.getElementById('c-mem-bar');
+    if (bar) bar.style.width = parseFloat(data.memPct) + '%';
+  } catch (_) {}
+}, 10000);
+</script>
+</body>
+</html>

@@ -66,6 +66,7 @@
                     <td>
                       <form method="POST" action="/warnings/clear/<%= guildId %>/<%= userId %>"
                             onsubmit="return confirm('Clear all warnings for this user?')">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                         <button type="submit" class="btn btn-danger btn-sm">Clear</button>
                       </form>
                     </td>

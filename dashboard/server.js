@@ -8,6 +8,9 @@ const flash   = require('connect-flash');
 const path    = require('path');
 const fs      = require('fs');
 const os      = require('os');
+const crypto  = require('crypto');
+const { timingSafeEqual } = require('crypto');
+const bcrypt  = require('bcryptjs');
 
 const app        = express();
 const PORT       = process.env.DASHBOARD_PORT || 3000;
@@ -15,6 +18,13 @@ const configPath = path.join(__dirname, '../data/config.json');
 const configSrc  = path.join(__dirname, '../config.json');
 
 const loginAttempts = new Map();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of loginAttempts) {
+    if (now - entry.first > 15 * 60 * 1000) loginAttempts.delete(ip);
+  }
+}, 5 * 60 * 1000);
 
 function loginRateLimit(req, res, next) {
   const ip  = req.ip || req.connection.remoteAddress;
@@ -51,6 +61,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'same-origin');
+  next();
+});
+
 app.use(session({
   secret: process.env.DASHBOARD_SECRET || (() => {
     console.warn('[DASHBOARD] DASHBOARD_SECRET not set in .env — using insecure default. Set it before deploying.');
@@ -58,7 +76,7 @@ app.use(session({
   })(),
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 24 },
+  cookie: { maxAge: 1000 * 60 * 60 * 24, sameSite: 'lax', secure: false },
 }));
 
 app.use(flash());
@@ -66,6 +84,23 @@ app.use(flash());
 app.use((req, res, next) => {
   res.locals.success = req.flash('success');
   res.locals.error   = req.flash('error');
+  next();
+});
+
+function generateCsrf(req) {
+  if (!req.session.csrfToken) req.session.csrfToken = crypto.randomBytes(24).toString('hex');
+  return req.session.csrfToken;
+}
+
+function csrfProtect(req, res, next) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  const token = req.body._csrf || req.headers['x-csrf-token'];
+  if (!token || token !== req.session.csrfToken) return res.status(403).send('Invalid CSRF token.');
+  next();
+}
+
+app.use((req, res, next) => {
+  res.locals.csrfToken = generateCsrf(req);
   next();
 });
 
@@ -79,7 +114,9 @@ function getConfig() {
 }
 
 function saveConfig(data) {
-  fs.writeFileSync(configPath, JSON.stringify(data, null, 2), 'utf8');
+  const tmp = configPath + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
+  fs.renameSync(tmp, configPath);
 }
 
 function getContainerStats() {
@@ -139,17 +176,29 @@ app.post('/login', loginRateLimit, (req, res) => {
   const { username, password } = req.body;
   const envUser = process.env.DASHBOARD_USERNAME || 'admin';
   const envPass = process.env.DASHBOARD_PASSWORD || 'admin123';
-  if (username === envUser && password === envPass) {
-    req.session.loggedIn = true;
-    req.session.username = username;
-    req.flash('success', 'Welcome back, ' + username + '!');
-    return res.redirect('/dashboard');
+  const usernameMatch = username === envUser;
+  let passwordMatch = false;
+  try {
+    passwordMatch = envPass.startsWith('$2')
+      ? bcrypt.compareSync(password, envPass)
+      : timingSafeEqual(Buffer.from(password), Buffer.from(envPass));
+  } catch (_) {
+    passwordMatch = false;
+  }
+  if (usernameMatch && passwordMatch) {
+    req.session.regenerate((err) => {
+      if (err) return res.redirect('/login');
+      req.session.loggedIn = true;
+      req.session.username = username;
+      res.redirect('/dashboard');
+    });
+    return;
   }
   req.flash('error', 'Invalid username or password.');
   res.redirect('/login');
 });
 
-app.get('/logout', (req, res) => {
+app.post('/logout', requireAuth, (req, res) => {
   req.session.destroy(() => res.redirect('/login'));
 });
 
@@ -188,11 +237,11 @@ app.get('/settings', requireAuth, (req, res) => {
   });
 });
 
-app.post('/settings', requireAuth, (req, res) => {
+app.post('/settings', requireAuth, csrfProtect, (req, res) => {
   const config = getConfig();
   const { prefix, embedColor, khatText, khatDeleteCmd } = req.body;
-  if (prefix)     config.prefix     = prefix.trim();
-  if (embedColor) config.embedColor = embedColor.trim();
+  if (prefix && prefix.trim().length <= 5) config.prefix = prefix.trim();
+  if (embedColor && /^#[0-9a-fA-F]{6}$/.test(embedColor.trim())) config.embedColor = embedColor.trim();
   if (!config.khat) config.khat = {};
   config.khat.text      = khatText || '';
   config.khat.deleteCmd = khatDeleteCmd === 'on';
@@ -213,10 +262,13 @@ app.get('/warnings', requireAuth, (req, res) => {
   });
 });
 
-app.post('/warnings/clear/:guildId/:userId', requireAuth, (req, res) => {
-  const config = getConfig();
-  const { guildId, userId } = req.params;
-  if (config.warnings?.[guildId]?.[userId]) {
+app.post('/warnings/clear/:guildId/:userId', requireAuth, csrfProtect, (req, res) => {
+  const config  = getConfig();
+  const guildId = String(req.params.guildId).replace(/[^0-9]/g, '');
+  const userId  = String(req.params.userId).replace(/[^0-9]/g, '');
+  if (!guildId || !userId) { req.flash('error', 'Invalid parameters.'); return res.redirect('/warnings'); }
+  if (Object.prototype.hasOwnProperty.call(config.warnings || {}, guildId) &&
+      Object.prototype.hasOwnProperty.call(config.warnings[guildId] || {}, userId)) {
     config.warnings[guildId][userId] = [];
     saveConfig(config);
   }
@@ -310,8 +362,27 @@ app.get('/api/container', requireAuth, (req, res) => {
 app.get('/protection', requireAuth, (req, res) => {
   const config = getConfig();
   if (!config.protection) {
-    const base = JSON.parse(fs.readFileSync(configSrc, 'utf8'));
-    config.protection = base.protection;
+    config.protection = {
+      logChannel: '',
+      whitelist: { users: [], roles: [], bots: [] },
+      antiRaid: {
+        enabled: false,
+        joinRate:   { enabled: false, count: 5,  seconds: 10, action: 'kick', timeoutDuration: '1h' },
+        accountAge: { enabled: false, days: 7,   action: 'kick', timeoutDuration: '1h' },
+      },
+      antiNuke: {
+        enabled: false,
+        channelDelete: { enabled: false, count: 3, seconds: 10, action: 'ban', timeoutDuration: '1h' },
+        channelCreate: { enabled: false, count: 3, seconds: 10, action: 'ban', timeoutDuration: '1h' },
+        channelEdit:   { enabled: false, count: 5, seconds: 10, action: 'ban', timeoutDuration: '1h' },
+        roleDelete:    { enabled: false, count: 3, seconds: 10, action: 'ban', timeoutDuration: '1h' },
+        roleCreate:    { enabled: false, count: 3, seconds: 10, action: 'ban', timeoutDuration: '1h' },
+        roleEdit:      { enabled: false, count: 5, seconds: 10, action: 'ban', timeoutDuration: '1h' },
+        massBan:       { enabled: false, count: 3, seconds: 10, action: 'ban', timeoutDuration: '1h' },
+        massKick:      { enabled: false, count: 3, seconds: 10, action: 'ban', timeoutDuration: '1h' },
+        webhookCreate: { enabled: false, count: 2, seconds: 10, action: 'ban', timeoutDuration: '1h' },
+      },
+    };
     saveConfig(config);
   }
   res.render('protection', {
@@ -321,7 +392,7 @@ app.get('/protection', requireAuth, (req, res) => {
   });
 });
 
-app.post('/protection', requireAuth, (req, res) => {
+app.post('/protection', requireAuth, csrfProtect, (req, res) => {
   const config = getConfig();
   if (!config.protection) config.protection = {};
   const p  = config.protection;
@@ -336,17 +407,19 @@ app.post('/protection', requireAuth, (req, res) => {
 
   if (!p.antiRaid) p.antiRaid = {};
   p.antiRaid.enabled = b.antiRaid_enabled === 'on';
+  const VALID_ACTIONS = ['ban', 'kick', 'timeout'];
+
   p.antiRaid.joinRate = {
     enabled:         b.joinRate_enabled === 'on',
-    count:           parseInt(b.joinRate_count)   || 5,
-    seconds:         parseInt(b.joinRate_seconds) || 10,
-    action:          b.joinRate_action || 'kick',
+    count:           Math.min(Math.max(parseInt(b.joinRate_count)   || 5,  1), 100),
+    seconds:         Math.min(Math.max(parseInt(b.joinRate_seconds) || 10, 1), 3600),
+    action:          VALID_ACTIONS.includes(b.joinRate_action) ? b.joinRate_action : 'kick',
     timeoutDuration: (b.joinRate_timeoutDuration || '1h').trim(),
   };
   p.antiRaid.accountAge = {
     enabled:         b.accountAge_enabled === 'on',
-    days:            parseInt(b.accountAge_days) || 7,
-    action:          b.accountAge_action || 'kick',
+    days:            Math.min(Math.max(parseInt(b.accountAge_days) || 7, 1), 3650),
+    action:          VALID_ACTIONS.includes(b.accountAge_action) ? b.accountAge_action : 'kick',
     timeoutDuration: (b.accountAge_timeoutDuration || '1h').trim(),
   };
 
@@ -357,9 +430,9 @@ app.post('/protection', requireAuth, (req, res) => {
   for (const key of nukeKeys) {
     p.antiNuke[key] = {
       enabled:         b[`${key}_enabled`] === 'on',
-      count:           parseInt(b[`${key}_count`])   || 3,
-      seconds:         parseInt(b[`${key}_seconds`]) || 10,
-      action:          b[`${key}_action`] || 'ban',
+      count:           Math.min(Math.max(parseInt(b[`${key}_count`])   || 3,  1), 100),
+      seconds:         Math.min(Math.max(parseInt(b[`${key}_seconds`]) || 10, 1), 3600),
+      action:          VALID_ACTIONS.includes(b[`${key}_action`]) ? b[`${key}_action`] : 'ban',
       timeoutDuration: (b[`${key}_timeoutDuration`] || '1h').trim(),
     };
   }
@@ -383,7 +456,7 @@ app.get('/logs', requireAuth, (req, res) => {
   });
 });
 
-app.post('/logs/clear', requireAuth, (req, res) => {
+app.post('/logs/clear', requireAuth, csrfProtect, (req, res) => {
   require('../utils/logger').clearLogs();
   req.flash('success', 'All logs cleared.');
   res.redirect('/logs');

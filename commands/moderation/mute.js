@@ -28,8 +28,7 @@ module.exports = {
       });
     }
 
-    const reason = args.slice(1).join(' ') || 'No reason provided.';
-    await target.timeout(28 * 24 * 60 * 60 * 1000, reason);
+    const reason = (args.slice(1).join(' ') || 'No reason provided.').slice(0, 512);
 
     return message.reply({
       embeds: [buildEmbed({

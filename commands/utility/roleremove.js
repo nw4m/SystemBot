@@ -25,9 +25,21 @@ module.exports = {
       });
     }
 
+    if (member.roles.highest.position >= message.member.roles.highest.position) {
+      return message.reply({
+        embeds: [buildEmbed({ title: 'RoleRemove Failed', description: 'You cannot remove roles from a member with an equal or higher role than you.', client, guild: message.guild })],
+      });
+    }
+
     if (role.position >= message.guild.members.me.roles.highest.position) {
       return message.reply({
         embeds: [buildEmbed({ title: 'RoleRemove Failed', description: 'I cannot remove a role that is higher than or equal to my highest role.', client, guild: message.guild })],
+      });
+    }
+
+    if (role.position >= message.member.roles.highest.position) {
+      return message.reply({
+        embeds: [buildEmbed({ title: 'RoleRemove Failed', description: 'You cannot remove a role that is equal to or higher than your own highest role.', client, guild: message.guild })],
       });
     }
 

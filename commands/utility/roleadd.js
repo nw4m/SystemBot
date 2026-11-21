@@ -31,6 +31,12 @@ module.exports = {
       });
     }
 
+    if (role.position >= message.member.roles.highest.position) {
+      return message.reply({
+        embeds: [buildEmbed({ title: 'RoleAdd Failed', description: 'You cannot assign a role that is equal to or higher than your own highest role.', client, guild: message.guild })],
+      });
+    }
+
     await member.roles.add(role);
 
     return message.reply({
